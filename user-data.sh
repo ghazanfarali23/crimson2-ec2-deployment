@@ -19,7 +19,7 @@ cd /usr/share/nginx/html
 rm -rf ./*
 
 # NOTE: Replace the URL below with YOUR separate GitHub repo URL before launching.
-# Example: git clone https://github.com/YOUR_USERNAME/crimson2-ec2-deployment.git .
+# Example: git clone https://github.com/ghazanfarali23/crimson2-ec2-deployment.git .
 git clone https://github.com/YOUR_USERNAME/crimson2-ec2-deployment.git .
 
 # 5. Set correct permissions for nginx
