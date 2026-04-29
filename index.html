@@ -1,0 +1,2882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crimson Group | Harvard Cloud Capstone Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Variables ────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --crimson:#A51C30;--crimson-hi:#c7243a;--crimson-dk:#7a1525;
+  --navy:#090e1e;--panel:#111829;--panel2:#172035;--panel3:#1c273d;
+  --border:#1f2d4a;--border2:#263552;
+  --text:#dde5f8;--muted:#7488a8;--muted2:#9aaac8;
+  --accent:#4f7bff;--green:#27a76a;--amber:#f0a930;--red:#e54040;
+  --sidebar-w:268px;
+}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--navy);color:var(--text);overflow:hidden}
+
+/* ── Layout ───────────────────────────────────────────────────────── */
+#app{display:flex;height:100vh;overflow:hidden}
+
+/* ── Sidebar ──────────────────────────────────────────────────────── */
+#sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:#080d1a;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;z-index:10;
+}
+.sidebar-logo{padding:1.15rem 1rem 1rem;border-bottom:1px solid var(--border)}
+.logo-pill{
+  display:inline-flex;align-items:center;gap:.4rem;
+  background:var(--crimson);color:#fff;border-radius:7px;
+  padding:.28rem .7rem;font-size:.68rem;font-weight:800;
+  letter-spacing:.07em;text-transform:uppercase;margin-bottom:.55rem;
+}
+.sidebar-logo h2{font-size:.88rem;font-weight:700;color:var(--text);line-height:1.35}
+.sidebar-logo p{font-size:.68rem;color:var(--muted);margin-top:.2rem}
+.sidebar-section-label{
+  padding:.9rem 1rem .3rem;font-size:.62rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+}
+.nav-item{
+  display:flex;align-items:center;gap:.65rem;padding:.6rem .9rem;
+  cursor:pointer;border-left:3px solid transparent;transition:all .18s;user-select:none;
+}
+.nav-item:hover{background:rgba(255,255,255,.04);border-left-color:rgba(165,28,48,.5)}
+.nav-item.active{background:rgba(165,28,48,.14);border-left-color:var(--crimson)}
+.nav-icon{
+  width:28px;height:28px;border-radius:7px;display:flex;align-items:center;
+  justify-content:center;font-size:.8rem;background:rgba(255,255,255,.06);flex-shrink:0;
+}
+.nav-item.active .nav-icon{background:var(--crimson);color:#fff}
+.nav-text{flex:1;min-width:0}
+.nav-title{font-size:.79rem;font-weight:600;color:var(--text);line-height:1.25}
+.nav-sub{font-size:.65rem;color:var(--muted);margin-top:.08rem}
+.nav-item.dim .nav-title{color:var(--muted)}
+.nbadge{font-size:.58rem;padding:.13rem .42rem;border-radius:9px;font-weight:700;flex-shrink:0}
+.live{background:rgba(39,167,106,.18);color:var(--green)}
+.wip{background:rgba(240,169,48,.18);color:var(--amber)}
+.sidebar-footer{
+  margin-top:auto;padding:.75rem 1rem;border-top:1px solid var(--border);
+  font-size:.65rem;color:var(--muted);line-height:1.6;
+}
+
+/* ── Main ─────────────────────────────────────────────────────────── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{
+  padding:.7rem 1.4rem;border-bottom:1px solid var(--border);
+  background:rgba(9,14,30,.92);display:flex;align-items:center;
+  justify-content:space-between;gap:1rem;backdrop-filter:blur(8px);flex-shrink:0;
+}
+#topbar h1{font-size:1rem;font-weight:700;color:var(--text)}
+#topbar p{font-size:.68rem;color:var(--muted);margin-top:.1rem}
+.breadcrumb{font-size:.67rem;color:var(--muted);display:flex;align-items:center;gap:.4rem;white-space:nowrap}
+.breadcrumb .sep{color:var(--border2)}
+#panel-area{flex:1;overflow-y:auto;padding:1.2rem 1.4rem 2.5rem}
+
+/* ── Panel sections ───────────────────────────────────────────────── */
+.panel-section{display:none;animation:fadeUp .2s ease}
+.panel-section.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Cards ────────────────────────────────────────────────────────── */
+.card{
+  background:var(--panel);border:1px solid var(--border);border-radius:13px;
+  padding:1rem 1.15rem;margin-bottom:.9rem;
+}
+.card-hd{
+  font-size:.82rem;font-weight:700;color:var(--text);margin-bottom:.8rem;
+  display:flex;align-items:center;gap:.45rem;
+}
+.card-hd .ci{font-size:.95rem}
+
+/* ── Grids ────────────────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem}
+.g32{display:grid;grid-template-columns:3fr 2fr;gap:.9rem}
+
+/* ── Metric cards ─────────────────────────────────────────────────── */
+.mc{
+  background:var(--panel2);border:1px solid var(--border);border-radius:11px;
+  padding:.85rem 1rem;text-align:center;
+}
+.mc .ml{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem}
+.mc .mv{font-size:1.4rem;font-weight:800;color:var(--text);font-family:'JetBrains Mono',monospace;line-height:1.1}
+.mc .ms{font-size:.67rem;color:var(--muted);margin-top:.2rem}
+.ms.good{color:var(--green)}.ms.warn{color:var(--amber)}.ms.bad{color:var(--red)}
+
+/* ── Form controls ────────────────────────────────────────────────── */
+.ig{margin-bottom:.65rem}
+.ig label{display:block;font-size:.71rem;font-weight:600;color:var(--muted2);margin-bottom:.25rem}
+.ig input,.ig select{
+  width:100%;background:var(--navy);border:1px solid var(--border2);border-radius:7px;
+  color:var(--text);padding:.42rem .7rem;font-size:.8rem;font-family:'Inter',sans-serif;
+  outline:none;transition:border-color .2s;
+}
+.ig input:focus,.ig select:focus{border-color:var(--crimson)}
+.radio-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.65rem}
+.rbtn{
+  padding:.32rem .75rem;border:1px solid var(--border2);border-radius:18px;
+  font-size:.72rem;font-weight:600;cursor:pointer;transition:all .18s;color:var(--muted);
+}
+.rbtn.active{background:var(--crimson);border-color:var(--crimson);color:#fff}
+.divider{border-top:1px solid var(--border);margin:.7rem 0}
+.section-label{
+  font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.5rem;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-size:.78rem}
+.tbl th{
+  background:rgba(255,255,255,.03);padding:.5rem .7rem;text-align:left;
+  font-size:.67rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--muted);border-bottom:1px solid var(--border);
+}
+.tbl td{padding:.48rem .7rem;border-bottom:1px solid rgba(31,45,74,.6);color:var(--text)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr.opt td{background:rgba(39,167,106,.07)}
+.tbl tr.sel td{background:rgba(240,169,48,.07)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.76rem}
+
+/* ── Chart wrap ───────────────────────────────────────────────────── */
+.cw{position:relative;width:100%}
+
+/* ── Analysis boxes ───────────────────────────────────────────────── */
+.abox{border-radius:9px;padding:.8rem 1rem;font-size:.79rem;line-height:1.65}
+.abox strong{display:block;margin-bottom:.35rem;font-size:.82rem}
+.abox.good{background:rgba(39,167,106,.1);border-left:4px solid var(--green)}
+.abox.warn{background:rgba(240,169,48,.1);border-left:4px solid var(--amber)}
+.abox.info{background:rgba(79,123,255,.1);border-left:4px solid var(--accent)}
+
+/* ── Slider ───────────────────────────────────────────────────────── */
+input[type=range]{width:100%;accent-color:var(--crimson);cursor:pointer;margin:.3rem 0}
+.slider-ticks{display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted)}
+
+/* ── Pill badges ──────────────────────────────────────────────────── */
+.pill{display:inline-block;border-radius:99px;padding:.2rem .65rem;font-size:.68rem;font-weight:700}
+.pill-green{background:rgba(39,167,106,.18);color:var(--green)}
+.pill-red{background:rgba(229,64,64,.18);color:var(--red)}
+.pill-amber{background:rgba(240,169,48,.18);color:var(--amber)}
+.pill-blue{background:rgba(79,123,255,.18);color:var(--accent)}
+.pill-crimson{background:rgba(165,28,48,.25);color:#e8637a}
+
+/* ── Compliance table badges ──────────────────────────────────────── */
+.fw-badge{display:inline-block;padding:.18rem .55rem;border-radius:6px;font-size:.67rem;font-weight:700}
+.fw-soc{background:rgba(79,123,255,.2);color:#7fa8ff}
+.fw-iso{background:rgba(39,167,106,.2);color:#5cd4a0}
+.fw-hipaa{background:rgba(240,169,48,.2);color:#f5c86e}
+
+/* ── Org chart ────────────────────────────────────────────────────── */
+.mermaid-wrap{background:var(--panel2);border-radius:11px;padding:1.25rem;overflow-x:auto;text-align:center}
+.mermaid-wrap svg{max-width:100%;height:auto}
+
+/* ── Placeholder ──────────────────────────────────────────────────── */
+.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:420px;text-align:center;gap:.9rem}
+.ph .ph-icon{font-size:3.2rem;opacity:.2}
+.ph h2{font-size:1.2rem;font-weight:700;color:var(--muted)}
+.ph p{font-size:.82rem;color:var(--muted);max-width:380px;line-height:1.65}
+.ph .wip-badge{
+  background:rgba(240,169,48,.12);color:var(--amber);
+  border:1px solid rgba(240,169,48,.3);border-radius:18px;
+  padding:.3rem .9rem;font-size:.72rem;font-weight:700;
+}
+.ph .repo-link{
+  display:inline-flex;align-items:center;gap:.35rem;
+  background:var(--panel2);border:1px solid var(--border2);border-radius:8px;
+  padding:.4rem .9rem;font-size:.74rem;color:var(--muted2);text-decoration:none;
+  transition:border-color .2s;
+}
+.ph .repo-link:hover{border-color:var(--crimson);color:var(--text)}
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+/* ── Auth overlay (Cognito / Amplify) ─────────────────────────────── */
+#app:not(.authed){display:none!important}
+#auth-overlay{
+  position:fixed;inset:0;z-index:10000;
+  background:linear-gradient(165deg,var(--navy) 0%,#060a14 50%,var(--navy) 100%);
+  display:flex;align-items:center;justify-content:center;padding:1.5rem;overflow-y:auto;
+}
+#auth-overlay.hidden{display:none!important}
+.auth-shell{width:100%;max-width:440px}
+.auth-brand{text-align:center;margin-bottom:1.25rem}
+.auth-brand .logo-pill{margin-bottom:.5rem}
+.auth-brand h1{font-size:1.05rem;font-weight:700;color:var(--text)}
+.auth-brand p{font-size:.72rem;color:var(--muted);margin-top:.35rem;line-height:1.5}
+.auth-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:13px;
+  padding:1.2rem 1.15rem 1.35rem;box-shadow:0 28px 90px rgba(0,0,0,.5);
+}
+.auth-tabs{display:flex;gap:.45rem;margin-bottom:1rem;flex-wrap:wrap}
+.auth-tabs .tab{
+  flex:1;min-width:0;text-align:center;padding:.38rem .5rem;border-radius:8px;
+  font-size:.72rem;font-weight:600;cursor:pointer;border:1px solid var(--border2);
+  color:var(--muted);background:transparent;transition:all .18s;font-family:inherit;
+}
+.auth-tabs .tab:hover{border-color:rgba(165,28,48,.45);color:var(--text)}
+.auth-tabs .tab.active{background:var(--crimson);border-color:var(--crimson);color:#fff}
+.auth-pane{display:none}
+.auth-pane.active{display:block}
+.auth-msg{
+  font-size:.75rem;padding:.55rem .7rem;border-radius:8px;margin-bottom:.85rem;line-height:1.45;
+}
+.auth-msg.err{background:rgba(229,64,64,.12);border:1px solid rgba(229,64,64,.35);color:#f09090}
+.auth-msg.ok{background:rgba(39,167,106,.12);border:1px solid rgba(39,167,106,.35);color:#5cd4a0}
+.auth-msg.hint{background:rgba(79,123,255,.1);border:1px solid rgba(79,123,255,.3);color:var(--muted2)}
+.auth-foot{margin-top:1rem;padding-top:.85rem;border-top:1px solid var(--border);font-size:.65rem;color:var(--muted);line-height:1.55}
+#auth-logout-btn{
+  margin-top:.65rem;width:100%;padding:.45rem .8rem;border-radius:8px;border:1px solid var(--border2);
+  background:var(--panel2);color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:border-color .18s,background .18s;
+}
+#auth-logout-btn:hover{border-color:var(--crimson);background:rgba(165,28,48,.12)}
+</style>
+</head>
+<body>
+<!-- ═══════════ AUTH (AWS Cognito via Amplify) ═══════════ -->
+<div id="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+  <div class="auth-shell">
+    <div class="auth-brand">
+      <div class="logo-pill">🎓 Harvard</div>
+      <h1 id="auth-title">Cloud Capstone Dashboard</h1>
+      <p>Sign in with your course Cognito user to access the MedData migration simulator.</p>
+    </div>
+    <div class="auth-card">
+      <div id="auth-config-msg" class="auth-msg hint" style="display:none"></div>
+      <div id="auth-flash" class="auth-msg" style="display:none"></div>
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="tab active" data-auth-tab="signin" role="tab" aria-selected="true">Sign in</button>
+        <button type="button" class="tab" data-auth-tab="signup" role="tab" aria-selected="false">Sign up</button>
+        <button type="button" class="tab" data-auth-tab="forgot" role="tab" aria-selected="false">Forgot password</button>
+      </div>
+      <div id="auth-pane-signin" class="auth-pane active" role="tabpanel">
+        <div class="ig"><label>Email</label><input type="email" id="auth-in-email" autocomplete="username"></div>
+        <div class="ig"><label>Password</label><input type="password" id="auth-in-pass" autocomplete="current-password"></div>
+        <button type="button" class="rbtn active" id="auth-btn-signin" style="width:100%;text-align:center;margin-top:.4rem;padding:.5rem;border-radius:8px;border:none">Sign in</button>
+      </div>
+      <div id="auth-pane-signup" class="auth-pane" role="tabpanel">
+        <div class="ig"><label>Email</label><input type="email" id="auth-up-email" autocomplete="email"></div>
+        <div class="ig"><label>Password</label><input type="password" id="auth-up-pass" autocomplete="new-password"></div>
+        <div class="ig"><label>Confirm password</label><input type="password" id="auth-up-pass2" autocomplete="new-password"></div>
+        <button type="button" class="rbtn active" id="auth-btn-signup" style="width:100%;text-align:center;margin-top:.4rem;padding:.5rem;border-radius:8px;border:none">Create account</button>
+      </div>
+      <div id="auth-pane-signup-confirm" style="display:none">
+        <p style="font-size:.74rem;color:var(--muted2);margin-bottom:.75rem;line-height:1.55">Enter the verification code sent to your email.</p>
+        <div class="ig"><label>Confirmation code</label><input type="text" id="auth-up-code" autocomplete="one-time-code"></div>
+        <button type="button" class="rbtn active" id="auth-btn-confirm" style="width:100%;text-align:center;margin-top:.4rem;padding:.5rem;border-radius:8px;border:none">Verify email</button>
+      </div>
+      <div id="auth-pane-forgot" class="auth-pane" role="tabpanel">
+        <div id="auth-forgot-step1">
+          <div class="ig"><label>Email</label><input type="email" id="auth-fp-email" autocomplete="username"></div>
+          <button type="button" class="rbtn active" id="auth-btn-fp-request" style="width:100%;text-align:center;margin-top:.4rem;padding:.5rem;border-radius:8px;border:none">Send reset code</button>
+        </div>
+        <div id="auth-forgot-step2" style="display:none">
+          <div class="ig"><label>Verification code</label><input type="text" id="auth-fp-code" autocomplete="one-time-code"></div>
+          <div class="ig"><label>New password</label><input type="password" id="auth-fp-new1" autocomplete="new-password"></div>
+          <div class="ig"><label>Confirm new password</label><input type="password" id="auth-fp-new2" autocomplete="new-password"></div>
+          <button type="button" class="rbtn active" id="auth-btn-fp-submit" style="width:100%;text-align:center;margin-top:.4rem;padding:.5rem;border-radius:8px;border:none">Set new password</button>
+        </div>
+      </div>
+      <div class="auth-foot">
+        Session tokens are issued by Amazon Cognito (JWT). This page uses TLS when hosted on Amplify; do not deploy real pool credentials to a public repository.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-pill">🎓 Harvard</div>
+    <h2>Cloud Management Capstone</h2>
+    <p>MedData AWS Migration · Group Dashboard</p>
+  </div>
+
+  <div class="sidebar-section-label">Project Panels</div>
+
+  <div class="nav-item active" data-target="p1">
+    <div class="nav-icon">📊</div>
+    <div class="nav-text">
+      <div class="nav-title">Panel 1 · Budget &amp; Cost</div>
+      <div class="nav-sub">Week 5 — OpEx / CapEx / ROI</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="nav-item" data-target="p2">
+    <div class="nav-icon">📈</div>
+    <div class="nav-text">
+      <div class="nav-title">Panel 2 · ROI &amp; Value</div>
+      <div class="nav-sub">Week 6 — Tangible + Intangible</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="nav-item" data-target="p3">
+    <div class="nav-icon">🏛️</div>
+    <div class="nav-text">
+      <div class="nav-title">Panel 3 · Governance</div>
+      <div class="nav-sub">Week 7 — Compliance &amp; Org Chart</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="nav-item" data-target="p4">
+    <div class="nav-icon">🏗️</div>
+    <div class="nav-text">
+      <div class="nav-title">Panel 4 · Gov. Refinement</div>
+      <div class="nav-sub">Week 8 — SLA &amp; Decision Structures</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="nav-item" data-target="p5">
+    <div class="nav-icon">🚀</div>
+    <div class="nav-text">
+      <div class="nav-title">Panel 5 · DevOps Plan</div>
+      <div class="nav-sub">Week 9 — CI/CD Simulator</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="nav-item" data-target="p6">
+    <div class="nav-icon">⚡</div>
+    <div class="nav-text">
+      <div class="nav-title">Panel 6 · Performance</div>
+      <div class="nav-sub">Week 10 — Uptime vs. Cost</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="nav-item" data-target="p7">
+    <div class="nav-icon">🤖</div>
+    <div class="nav-text">
+      <div class="nav-title">Panel 7 · AI Integration</div>
+      <div class="nav-sub">Week 11 — ROI Sensitivity Explorer</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="nav-item" data-target="p8">
+    <div class="nav-icon">📈</div>
+    <div class="nav-text">
+      <div class="nav-title">Panel 8 · Adoption Curve</div>
+      <div class="nav-sub">Week 12 — Training &amp; Change Mgmt</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="nav-item" data-target="p9">
+    <div class="nav-icon">🌐</div>
+    <div class="nav-text">
+      <div class="nav-title">Panel 9 · Product Diffusion</div>
+      <div class="nav-sub">Week 13 — Market Strategy</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="sidebar-section-label">Extra Credit</div>
+
+  <div class="nav-item" data-target="ec1">
+    <div class="nav-icon">☁️</div>
+    <div class="nav-text">
+      <div class="nav-title">EC 1 · Cloud Cost Mgmt</div>
+      <div class="nav-sub">AWS Cost Explorer &amp; FinOps</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="nav-item" data-target="ec2">
+    <div class="nav-icon">🚀</div>
+    <div class="nav-text">
+      <div class="nav-title">EC 2 · Deployment &amp; Ops</div>
+      <div class="nav-sub">Amplify, Cognito, cost &amp; security</div>
+    </div>
+    <span class="nbadge live">Live</span>
+  </div>
+
+  <div class="sidebar-footer">
+    Advanced Cloud Management · Spring 2026<br>
+    Harvard Extension School<br>
+    <span style="color:#e8637a;font-weight:700">Group Crimson 2</span> &nbsp;·&nbsp; Ghazanfar &nbsp;·&nbsp; Aaron &nbsp;·&nbsp; Chloe
+    <button type="button" id="auth-logout-btn" style="display:none">Sign out</button>
+  </div>
+</aside>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<div id="main">
+  <div id="topbar">
+    <div>
+      <h1 id="tb-title">Financial Plan Simulator v1</h1>
+      <p id="tb-sub">5-Year OpEx / CapEx / ROI Model</p>
+    </div>
+    <div class="breadcrumb">
+      <span style="color:#e8637a;font-weight:700">Crimson 2</span>
+      <span class="sep">›</span>
+      <span>MedData AWS Migration</span>
+      <span class="sep">›</span>
+      <span id="tb-panel">Panel 1</span>
+    </div>
+  </div>
+
+  <div id="panel-area">
+
+    <!-- ════════════════════════════════════════════
+         PANEL 1 — Financial Simulator v1
+         ════════════════════════════════════════════ -->
+    <section id="p1" class="panel-section active">
+      <div class="g2" style="align-items:start">
+
+        <!-- Controls -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">⚙️</span> Cost Inputs</div>
+            <div class="ig"><label>1st Year OpEx ($)</label>
+              <input type="number" id="p1-opex" value="18000" step="500" min="0"></div>
+            <div class="ig"><label>1st Year CapEx ($)</label>
+              <input type="number" id="p1-capex" value="5000" step="500" min="0"></div>
+            <div class="ig"><label>Annual Change (%)</label>
+              <input type="number" id="p1-change" value="5" step="0.5"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-hd"><span class="ci">💰</span> ROI Assumptions</div>
+            <div class="section-label">Benefit Model</div>
+            <div class="radio-row">
+              <div class="rbtn active" id="p1-btn-ann" onclick="p1SetMode('annual')">Annual Benefit ($)</div>
+              <div class="rbtn" id="p1-btn-hrs" onclick="p1SetMode('hours')">Hours Saved</div>
+            </div>
+            <div id="p1-ann">
+              <div class="ig"><label>Annual Benefit ($)</label>
+                <input type="number" id="p1-benefit" value="25000" step="1000" min="0"></div>
+              <div class="ig"><label>Benefit Growth (%/yr)</label>
+                <input type="number" id="p1-bgrowth" value="0" step="1"></div>
+            </div>
+            <div id="p1-hrs" style="display:none">
+              <div class="ig"><label>Team Size (people)</label>
+                <input type="number" id="p1-team" value="5" step="1" min="1"></div>
+              <div class="ig"><label>Hours Saved / Person / Week</label>
+                <input type="number" id="p1-hpw" value="1" step="0.25" min="0"></div>
+              <div class="ig"><label>Loaded Cost ($/hour)</label>
+                <input type="number" id="p1-rate" value="60" step="5" min="0"></div>
+              <div class="ig"><label>Working Weeks / Year</label>
+                <input type="number" id="p1-wks" value="48" step="1" min="1" max="52"></div>
+            </div>
+            <div class="divider"></div>
+            <div class="ig"><label>Benefit Realization (%)</label>
+              <input type="number" id="p1-real" value="80" step="5" min="0" max="100"></div>
+            <div class="ig"><label>NPV Discount Rate (%)</label>
+              <input type="number" id="p1-disc" value="10" step="1" min="0"></div>
+          </div>
+        </div>
+
+        <!-- Outputs -->
+        <div>
+          <div class="g3" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">OpEx 5-yr</div><div class="mv" id="p1-m-opex">—</div></div>
+            <div class="mc"><div class="ml">CapEx 5-yr</div><div class="mv" id="p1-m-capex">—</div></div>
+            <div class="mc"><div class="ml">Total TCO</div><div class="mv" id="p1-m-tco">—</div></div>
+          </div>
+          <div class="g3" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">5-yr Benefits</div><div class="mv" id="p1-m-ben">—</div></div>
+            <div class="mc"><div class="ml">5-yr Net</div><div class="mv" id="p1-m-net">—</div></div>
+            <div class="mc">
+              <div class="ml">ROI</div>
+              <div class="mv" id="p1-m-roi">—</div>
+              <div class="ms" id="p1-m-npv">NPV: —</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-hd"><span class="ci">📋</span> Cash Flow Table — Years 1–5</div>
+            <table class="tbl" id="p1-tbl">
+              <thead><tr><th>Year</th><th>OpEx ($)</th><th>CapEx ($)</th><th>Total ($)</th><th>Cumulative ($)</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><span class="ci">📊</span> 5-Year Cost Chart &nbsp;<span style="color:var(--muted);font-weight:400;font-size:.72rem">(x = Dollars, y = Year)</span></div>
+        <div class="cw" style="height:260px"><canvas id="p1-chart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 2 — Financial Simulator v2
+         ════════════════════════════════════════════ -->
+    <section id="p2" class="panel-section">
+      <div class="g2" style="align-items:start">
+
+        <!-- Controls -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">⚙️</span> Cost Inputs</div>
+            <div class="ig"><label>1st Year OpEx ($)</label>
+              <input type="number" id="p2-opex" value="18000" step="500" min="0"></div>
+            <div class="ig"><label>1st Year CapEx ($)</label>
+              <input type="number" id="p2-capex" value="5000" step="500" min="0"></div>
+            <div class="ig"><label>Annual Change (%)</label>
+              <input type="number" id="p2-change" value="5" step="0.5"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-hd"><span class="ci">📦</span> Tangible Returns</div>
+            <div class="section-label">Tangible Benefit Model</div>
+            <div class="radio-row">
+              <div class="rbtn active" id="p2-btn-ann" onclick="p2SetMode('annual')">Annual Benefit ($)</div>
+              <div class="rbtn" id="p2-btn-hrs" onclick="p2SetMode('hours')">Hours Saved</div>
+            </div>
+            <div id="p2-ann">
+              <div class="ig"><label>Year 1 Tangible Benefit ($)</label>
+                <input type="number" id="p2-tben" value="25000" step="1000" min="0"></div>
+              <div class="ig"><label>Tangible Benefit Growth (%/yr)</label>
+                <input type="number" id="p2-tgrow" value="0" step="1"></div>
+            </div>
+            <div id="p2-hrs" style="display:none">
+              <div class="ig"><label>Team Size (people)</label>
+                <input type="number" id="p2-team" value="5" step="1" min="1"></div>
+              <div class="ig"><label>Hours Saved / Person / Week</label>
+                <input type="number" id="p2-hpw" value="1" step="0.25" min="0"></div>
+              <div class="ig"><label>Loaded Cost ($/hour)</label>
+                <input type="number" id="p2-rate" value="60" step="5" min="0"></div>
+              <div class="ig"><label>Working Weeks / Year</label>
+                <input type="number" id="p2-wks" value="48" step="1" min="1" max="52"></div>
+            </div>
+            <div class="ig"><label>Tangible Realization (%)</label>
+              <input type="number" id="p2-treal" value="80" step="5" min="0" max="100"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-hd"><span class="ci">✨</span> Intangible Returns</div>
+            <div class="ig"><label>Year 1 Intangible Return ($)</label>
+              <input type="number" id="p2-iben" value="10000" step="500" min="0"></div>
+            <div class="ig"><label>Intangible Growth (%/yr)</label>
+              <input type="number" id="p2-igrow" value="2" step="1"></div>
+            <div class="ig"><label>Intangible Realization (%)</label>
+              <input type="number" id="p2-ireal" value="50" step="5" min="0" max="100"></div>
+            <div class="divider"></div>
+            <div class="ig"><label>NPV Discount Rate (%)</label>
+              <input type="number" id="p2-disc" value="10" step="1" min="0"></div>
+          </div>
+        </div>
+
+        <!-- Outputs -->
+        <div>
+          <div class="g3" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">Total TCO</div><div class="mv" id="p2-m-tco">—</div></div>
+            <div class="mc"><div class="ml">Tangible (5-yr)</div><div class="mv" id="p2-m-tan">—</div></div>
+            <div class="mc"><div class="ml">Intangible (5-yr)</div><div class="mv" id="p2-m-int">—</div></div>
+          </div>
+          <div class="g3" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">Total Returns</div><div class="mv" id="p2-m-ret">—</div></div>
+            <div class="mc"><div class="ml">5-yr Net</div><div class="mv" id="p2-m-net">—</div></div>
+            <div class="mc">
+              <div class="ml">ROI</div>
+              <div class="mv" id="p2-m-roi">—</div>
+              <div class="ms" id="p2-m-npv">NPV: —</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-hd"><span class="ci">📋</span> Tangible vs. Intangible Returns</div>
+            <table class="tbl" id="p2-tbl">
+              <thead><tr><th>Year</th><th>Tangible ($)</th><th>Intangible ($)</th><th>Total Return ($)</th><th>ROI %</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="card-hd"><span class="ci">📊</span> Cost Chart &nbsp;<span style="color:var(--muted);font-weight:400;font-size:.72rem">(x = $, y = Year)</span></div>
+          <div class="cw" style="height:250px"><canvas id="p2-cost-chart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="ci">📈</span> ROI % by Year &nbsp;<span style="color:var(--muted);font-weight:400;font-size:.72rem">(x = ROI %, y = Year)</span></div>
+          <div class="cw" style="height:250px"><canvas id="p2-roi-chart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 3 — ERP Governance & Compliance
+         ════════════════════════════════════════════ -->
+    <section id="p3" class="panel-section">
+
+      <!-- Compliance Frameworks -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">📜</span> 1. Compliance Frameworks</div>
+        <table class="tbl">
+          <thead><tr><th>Framework</th><th>Purpose</th><th>Application in ERP Cloud Deployment</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="fw-badge fw-soc">SOC 2 Type II</span></td>
+              <td>Ensures security, availability, and confidentiality of cloud services</td>
+              <td>Validates that the ERP cloud platform maintains secure operational controls and protects enterprise data</td>
+            </tr>
+            <tr>
+              <td><span class="fw-badge fw-iso">ISO 27001</span></td>
+              <td>Information Security Management System (ISMS) standard</td>
+              <td>Establishes structured policies for protecting sensitive enterprise and customer data</td>
+            </tr>
+            <tr>
+              <td><span class="fw-badge fw-hipaa">HIPAA</span></td>
+              <td>Protection of healthcare-related data</td>
+              <td>Ensures ERP deployments used by healthcare organizations comply with data privacy regulations</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Security Controls -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">🔒</span> 2. Security &amp; Compliance Controls</div>
+        <table class="tbl">
+          <thead><tr><th>Control</th><th>Description</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>IAM Policy Audits</strong></td>
+              <td>Regular review of identity and access policies</td>
+              <td>Ensures least-privilege access and prevents unauthorized system access</td>
+            </tr>
+            <tr>
+              <td><strong>AES-256 Encryption</strong></td>
+              <td>Encryption of stored ERP data</td>
+              <td>Protects sensitive enterprise data at rest</td>
+            </tr>
+            <tr>
+              <td><strong>TLS Encryption</strong></td>
+              <td>Encryption of data in transit</td>
+              <td>Secures communication between ERP systems and cloud infrastructure</td>
+            </tr>
+            <tr>
+              <td><strong>Quarterly Compliance Reviews</strong></td>
+              <td>Periodic governance and security evaluations</td>
+              <td>Ensures continued alignment with compliance frameworks</td>
+            </tr>
+            <tr>
+              <td><strong>Continuous Monitoring</strong></td>
+              <td>Logging and monitoring of system activity</td>
+              <td>Detects suspicious activity and ensures operational transparency</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Org Chart -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">🏗️</span> 3. Organizational Chart — Governance &amp; Execution Boards</div>
+        <div class="mermaid-wrap" id="p3-mermaid-wrap">
+          <div id="p3-mermaid-out" style="min-height:180px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem">
+            Loading org chart…
+          </div>
+        </div>
+      </div>
+
+      <!-- Responsibilities -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">📌</span> 4. Governance Body Responsibilities</div>
+        <table class="tbl">
+          <thead><tr><th>Governance Body</th><th>Key Responsibilities</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Board of Directors</strong></td><td>Strategic oversight, risk governance, and approval of enterprise cloud strategy</td></tr>
+            <tr><td><strong>Cloud Governance Board</strong></td><td>Establish cloud governance policies, define security standards, and oversee compliance initiatives</td></tr>
+            <tr><td><strong>Security &amp; Risk Committee</strong></td><td>Conduct security monitoring, vulnerability assessments, and incident management</td></tr>
+            <tr><td><strong>Compliance &amp; Audit Team</strong></td><td>Manage SOC 2, ISO 27001, and regulatory audits; maintain compliance documentation</td></tr>
+            <tr><td><strong>DevOps &amp; Platform Engineering</strong></td><td>Deploy and maintain secure infrastructure, enforce encryption and access control policies</td></tr>
+            <tr><td><strong>Customer Success &amp; Operations</strong></td><td>Support enterprise clients, ensure operational compliance, and manage service delivery</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 4 — Cloud Governance Model (Chloe)
+         ════════════════════════════════════════════ -->
+    <section id="p4" class="panel-section">
+
+      <!-- Governance Structure Table -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">🏗️</span> Governance Structure — ERP Migration to AWS</div>
+        <p style="font-size:.79rem;color:var(--muted);margin-bottom:.85rem;line-height:1.6">
+          This governance structure ensures strategic oversight, operational accountability, and reliable cloud performance throughout the ERP migration.
+        </p>
+        <table class="tbl">
+          <thead><tr><th>Governance Body</th><th>Members</th><th>Meeting Frequency</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Cloud Steering Committee</strong></td>
+              <td>CIO, IT Leadership, Finance</td>
+              <td><span class="pill pill-blue">Monthly</span></td>
+              <td>Define ERP cloud strategy and approve budgets</td>
+            </tr>
+            <tr>
+              <td><strong>Architecture Review Board</strong></td>
+              <td>Cloud Engineering Lead, DBA, DevOps Lead</td>
+              <td><span class="pill pill-amber">Bi-weekly</span></td>
+              <td>Approve AWS architecture and disaster recovery</td>
+            </tr>
+            <tr>
+              <td><strong>DevOps &amp; Cloud Engineering Team</strong></td>
+              <td>Cloud Engineers, DevOps Engineers</td>
+              <td><span class="pill pill-green">Weekly</span></td>
+              <td>Deploy ERP systems and manage CI/CD pipelines</td>
+            </tr>
+            <tr>
+              <td><strong>Security &amp; Compliance Team</strong></td>
+              <td>Security Engineers, Compliance Officers</td>
+              <td><span class="pill pill-crimson">Quarterly</span></td>
+              <td>Monitor security and regulatory compliance</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SLA Simulator -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">📡</span> ERP Cloud SLA Monitoring Simulator</div>
+        <div class="g3" style="margin-bottom:1rem">
+          <div>
+            <div class="ig">
+              <label>System Uptime (%): <strong id="p4-uptime-val" style="color:var(--text)">99.90</strong></label>
+              <input type="range" id="p4-uptime" min="99.0" max="100.0" step="0.01" value="99.9" oninput="renderP4()">
+              <div class="slider-ticks"><span>99.0%</span><span>99.5%</span><span>100%</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ig">
+              <label>Incident Response Time (min): <strong id="p4-resp-val" style="color:var(--text)">15</strong></label>
+              <input type="range" id="p4-resp" min="1" max="60" step="1" value="15" oninput="renderP4()">
+              <div class="slider-ticks"><span>1 min</span><span>30 min</span><span>60 min</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ig">
+              <label>Disaster Recovery Time (min): <strong id="p4-rec-val" style="color:var(--text)">60</strong></label>
+              <input type="range" id="p4-rec" min="10" max="120" step="1" value="60" oninput="renderP4()">
+              <div class="slider-ticks"><span>10 min</span><span>65 min</span><span>120 min</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SLA Status Cards -->
+        <div class="section-label">SLA Status</div>
+        <div class="g3">
+          <div id="p4-sla-uptime" class="abox"></div>
+          <div id="p4-sla-resp"   class="abox"></div>
+          <div id="p4-sla-rec"    class="abox"></div>
+        </div>
+      </div>
+
+      <!-- Governance Insights -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">💡</span> Governance Insights</div>
+        <p style="font-size:.79rem;color:var(--muted2);margin-bottom:.9rem;line-height:1.65">
+          This governance structure ensures that ERP cloud operations remain aligned with enterprise goals.
+        </p>
+        <div class="g2">
+          <div class="abox info">
+            <strong>Cloud Steering Committee</strong>
+            Defines strategic cloud direction and approves budgets and migration timelines.
+          </div>
+          <div class="abox info">
+            <strong>Architecture Review Board</strong>
+            Validates AWS architecture and ensures high availability and disaster recovery.
+          </div>
+          <div class="abox good">
+            <strong>DevOps &amp; Cloud Engineering</strong>
+            Implements CI/CD pipelines, deploys ERP updates, and manages infrastructure.
+          </div>
+          <div class="abox warn">
+            <strong>Security &amp; Compliance</strong>
+            Protects enterprise data and enforces security policies and compliance requirements.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 5 — DevOps Pipeline Simulator (Chloe)
+         ════════════════════════════════════════════ -->
+    <section id="p5" class="panel-section">
+
+      <div class="g2" style="align-items:start">
+
+        <!-- Controls -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">⚙️</span> Simulation Inputs</div>
+            <p style="font-size:.77rem;color:var(--muted);margin-bottom:.85rem;line-height:1.6">
+              Simulate how CI/CD automation and DevOps team size affect ERP deployment performance during cloud migration.
+            </p>
+            <div class="ig">
+              <label>Automation Level (%): <strong id="p5-auto-val" style="color:var(--text)">50</strong></label>
+              <input type="range" id="p5-auto" min="0" max="100" step="1" value="50" oninput="renderP5()">
+              <div class="slider-ticks"><span>0%</span><span>50%</span><span>100%</span></div>
+            </div>
+            <div class="ig" style="margin-top:.6rem">
+              <label>DevOps Team Size: <strong id="p5-team-val" style="color:var(--text)">5</strong></label>
+              <input type="range" id="p5-team" min="1" max="15" step="1" value="5" oninput="renderP5()">
+              <div class="slider-ticks"><span>1</span><span>8</span><span>15</span></div>
+            </div>
+          </div>
+
+          <!-- Pipeline Health + Metrics -->
+          <div id="p5-health-box" class="abox" style="margin-bottom:.85rem"></div>
+
+          <div class="g3">
+            <div class="mc"><div class="ml">Deployments / Week</div><div class="mv" id="p5-m-dep">—</div></div>
+            <div class="mc"><div class="ml">Failure Rate (%)</div><div class="mv" id="p5-m-fail">—</div></div>
+            <div class="mc"><div class="ml">MTTR (hrs)</div><div class="mv" id="p5-m-mttr">—</div></div>
+          </div>
+        </div>
+
+        <!-- Scenario Table -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">📋</span> Quick Scenario Analysis</div>
+            <table class="tbl" id="p5-scenarios">
+              <thead><tr><th>Automation %</th><th>Team Size</th><th>Deployments / Week</th><th>Failure Rate %</th><th>MTTR (hrs)</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-hd"><span class="ci">ℹ️</span> How It Works</div>
+            <div style="font-size:.79rem;color:var(--muted2);line-height:1.7">
+              <strong style="color:var(--text);display:block;margin-bottom:.35rem">Simulation Formulas</strong>
+              📦 <strong>Deploy Freq</strong> = (automation × 0.12) + (team × 0.8)<br>
+              ❌ <strong>Failure Rate</strong> = max(2, 35 − (automation × 0.3) + (team × 0.5))<br>
+              ⏱ <strong>MTTR</strong> = max(0.5, 10 − (automation × 0.08) + (team × 0.2))<br><br>
+              Higher automation increases deployment frequency and reduces failure rates. Larger teams accelerate deployments but may add coordination overhead at lower automation levels.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Chart -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">📈</span> Deployment Frequency &amp; Failure Rate vs. Automation %
+          <span style="color:var(--muted);font-weight:400;font-size:.7rem">&nbsp;— team size held constant at selected value</span>
+        </div>
+        <div class="cw" style="height:280px"><canvas id="p5-chart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 6 — Performance & Resilience
+         ════════════════════════════════════════════ -->
+    <section id="p6" class="panel-section">
+
+      <!-- Controls row -->
+      <div class="g2" style="align-items:start;margin-bottom:.9rem">
+        <div class="card">
+          <div class="card-hd"><span class="ci">⚙️</span> Simulator Controls</div>
+          <div class="section-label" style="margin-bottom:.5rem">Deployment Mode</div>
+          <div class="radio-row" style="margin-bottom:1rem">
+            <div class="rbtn active" id="p6-btn-single" onclick="p6SetRegion('Single Region')">Single Region</div>
+            <div class="rbtn" id="p6-btn-multi" onclick="p6SetRegion('Multi-Region')">Multi-Region</div>
+          </div>
+          <div class="section-label">Redundancy Level: <strong id="p6-level-lbl" style="color:var(--text)">Level 4</strong></div>
+          <input type="range" id="p6-slider" min="1" max="5" value="4" oninput="p6OnSlider(this.value)">
+          <div class="slider-ticks">
+            <span>L1</span><span>L2</span><span>L3</span><span>L4</span><span>L5</span>
+          </div>
+
+          <div class="divider"></div>
+          <div id="p6-sidebar-summary" style="font-size:.78rem;line-height:1.7;color:var(--muted2)"></div>
+        </div>
+
+        <!-- Insight tiles -->
+        <div>
+          <div class="g2" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">Redundancy Level</div><div class="mv" id="p6-m-level">—</div><div class="ms" id="p6-m-mode">—</div></div>
+            <div class="mc"><div class="ml">Uptime SLA</div><div class="mv" id="p6-m-uptime">—</div><div class="ms good" id="p6-m-udelta">—</div></div>
+          </div>
+          <div class="g2">
+            <div class="mc"><div class="ml">Monthly Cost</div><div class="mv" id="p6-m-cost">—</div><div class="ms" id="p6-m-cdelta">—</div></div>
+            <div class="mc"><div class="ml">Annual Downtime</div><div class="mv" id="p6-m-dt">—</div><div class="ms" id="p6-m-sla">—</div></div>
+          </div>
+
+          <div id="p6-abox" class="abox info" style="margin-top:.85rem"></div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="g2">
+        <div class="card">
+          <div class="card-hd"><span class="ci">📊</span> Uptime vs. Monthly Cost</div>
+          <div class="cw" style="height:290px"><canvas id="p6-main-chart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="ci">📉</span> Marginal Cost vs. Uptime Gain per Level</div>
+          <div class="cw" style="height:290px"><canvas id="p6-marg-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Config table -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">📋</span> Configuration Details</div>
+        <table class="tbl" id="p6-cfg-tbl">
+          <thead><tr><th>Level</th><th>Architecture</th><th>Uptime</th><th>Cost / mo</th><th>Downtime / yr</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 7 — Innovation & AI Integration (Chloe)
+         ════════════════════════════════════════════ -->
+    <section id="p7" class="panel-section">
+
+      <!-- Context narrative -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">🤖</span> AI ROI Explorer for ERP Cloud Migration</div>
+        <p style="font-size:.79rem;color:var(--muted2);line-height:1.7">
+          <strong style="color:var(--text)">How this relates to AWS ERP analytics:</strong> Moving ERP workloads to the cloud
+          (for example on AWS) unlocks scalable storage, managed databases, and AI services.
+          <strong>AI investment</strong> funds models, MLOps, and integration that turn ERP data into
+          forecasts and automation. <strong>Data quality</strong> determines whether those models are
+          trustworthy — poor master data or inconsistent fields cap value no matter how much
+          you spend. This explorer illustrates that tradeoff with a simple ROI curve.
+        </p>
+      </div>
+
+      <div class="g32" style="align-items:start">
+
+        <!-- Controls (left column) -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">⚙️</span> Inputs</div>
+            <div class="ig">
+              <label>AI Investment ($): <strong id="p7-inv-val" style="color:var(--text)">$180,000</strong></label>
+              <input type="range" id="p7-inv" min="0" max="500000" step="5000" value="180000" oninput="renderP7()">
+              <div class="slider-ticks"><span>$0</span><span>$250K</span><span>$500K</span></div>
+              <div style="font-size:.65rem;color:var(--muted);margin-top:.2rem">Annual or program-level AI spend (models, tooling, integration).</div>
+            </div>
+            <div class="ig" style="margin-top:.6rem">
+              <label>Data Quality (%): <strong id="p7-qual-val" style="color:var(--text)">72%</strong></label>
+              <input type="range" id="p7-qual" min="0" max="100" step="1" value="72" oninput="renderP7()">
+              <div class="slider-ticks"><span>0%</span><span>50%</span><span>100%</span></div>
+              <div style="font-size:.65rem;color:var(--muted);margin-top:.2rem">0% = fragmented/inaccurate ERP data; 100% = governed, complete master data.</div>
+            </div>
+          </div>
+
+          <!-- Modeled ROI metric -->
+          <div class="mc" style="margin-bottom:.85rem">
+            <div class="ml">Modeled ROI</div>
+            <div class="mv" id="p7-m-roi" style="font-size:1.8rem">—</div>
+          </div>
+
+          <!-- Additional KPI Cards -->
+          <div class="g3" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">5-yr Net Gain</div><div class="mv" id="p7-m-net">—</div></div>
+            <div class="mc"><div class="ml">Efficiency Score</div><div class="mv" id="p7-m-eff">—</div></div>
+            <div class="mc"><div class="ml">Optimal Invest.</div><div class="mv" id="p7-m-opt">$300K</div><div class="ms good">ROI plateau</div></div>
+          </div>
+
+          <!-- Zone Box -->
+          <div id="p7-zone-box" class="abox"></div>
+        </div>
+
+        <!-- Main ROI curve chart (right column, larger) -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">📈</span> ROI (%) vs AI Investment ($) — at your data quality setting</div>
+            <div class="cw" style="height:340px"><canvas id="p7-main-chart"></canvas></div>
+            <p style="font-size:.67rem;color:var(--muted);margin-top:.6rem;line-height:1.6">
+              Zones: <span style="color:var(--red);font-weight:700">Red</span> = low ROI typical of underinvestment;
+              <span style="color:var(--amber);font-weight:700">Yellow</span> = strong returns before saturation;
+              <span style="color:var(--green);font-weight:700">Green</span> = plateau / diminishing marginal returns.
+              Model is illustrative, not financial advice.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Quality chart + Key Findings -->
+      <div class="g2" style="margin-top:.1rem">
+        <div class="card">
+          <div class="card-hd"><span class="ci">📊</span> ROI vs. Data Quality &nbsp;<span style="color:var(--muted);font-weight:400;font-size:.7rem">(at current investment)</span></div>
+          <div class="cw" style="height:230px"><canvas id="p7-qual-chart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><span class="ci">💡</span> Key Findings</div>
+          <div style="font-size:.79rem;line-height:1.75;color:var(--muted2)">
+            <div style="margin-bottom:.5rem">
+              <span class="pill pill-green" style="margin-right:.4rem">Plateau</span>
+              <strong style="color:var(--text)">ROI plateaus after ~$300K investment</strong><br>
+              Marginal returns drop sharply beyond this threshold regardless of data quality.
+            </div>
+            <div style="margin-bottom:.5rem">
+              <span class="pill pill-amber" style="margin-right:.4rem">Quality</span>
+              <strong style="color:var(--text)">80% data quality unlocks maximum gain</strong><br>
+              Poor master data or inconsistent fields cap achievable ROI even at high investment.
+            </div>
+            <div>
+              <span class="pill pill-blue" style="margin-right:.4rem">Sweet Spot</span>
+              <strong style="color:var(--text)">$120K–$300K + ≥80% quality = optimal zone</strong><br>
+              This combination maximizes AI-driven ROI per dollar invested for ERP analytics.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 8 — Adoption Curve (Aaron)
+         ════════════════════════════════════════════ -->
+    <section id="p8" class="panel-section">
+
+      <!-- Context -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">📈</span> Adoption Curve — Training &amp; Change Management</div>
+        <p style="font-size:.79rem;color:var(--muted2);line-height:1.7">
+          Simulate employee <strong style="color:var(--text)">adoption rate</strong> over time driven by
+          <strong>training hours</strong> and <strong>leadership engagement</strong>.
+          Includes a <strong>resistance index</strong> line for change-management narrative.
+          Adoption follows a logistic (S-curve): change rarely jumps instantly — it ramps as behaviors spread.
+        </p>
+      </div>
+
+      <div class="g2" style="align-items:start">
+
+        <!-- Controls (left) -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">⚙️</span> Simulation Inputs</div>
+            <div class="ig">
+              <label>Training (hrs / employee / yr): <strong id="p8-train-val" style="color:var(--text)">16</strong></label>
+              <input type="range" id="p8-train" min="0" max="40" step="1" value="16" oninput="renderP8()">
+              <div class="slider-ticks"><span>0 hrs</span><span>20 hrs</span><span>40 hrs</span></div>
+            </div>
+            <div class="ig" style="margin-top:.6rem">
+              <label>Leadership Engagement (%): <strong id="p8-lead-val" style="color:var(--text)">55%</strong></label>
+              <input type="range" id="p8-lead" min="0" max="100" step="5" value="55" oninput="renderP8()">
+              <div class="slider-ticks"><span>0%</span><span>50%</span><span>100%</span></div>
+            </div>
+            <div class="ig" style="margin-top:.6rem">
+              <label>Horizon (months): <strong id="p8-horizon-val" style="color:var(--text)">24</strong></label>
+              <input type="range" id="p8-horizon" min="6" max="36" step="1" value="24" oninput="renderP8()">
+              <div class="slider-ticks"><span>6 mo</span><span>21 mo</span><span>36 mo</span></div>
+            </div>
+          </div>
+
+          <!-- Snapshot KPIs -->
+          <div class="section-label">Latest Month Snapshot</div>
+          <div class="g2" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">Adoption %</div><div class="mv" id="p8-m-adopt">—</div></div>
+            <div class="mc"><div class="ml">Resistance Index</div><div class="mv" id="p8-m-resist">—</div></div>
+          </div>
+
+          <!-- Insight box -->
+          <div id="p8-insight-box" class="abox"></div>
+
+          <!-- How it works -->
+          <div class="card" style="margin-top:.85rem">
+            <div class="card-hd"><span class="ci">ℹ️</span> How It Works</div>
+            <div style="font-size:.79rem;color:var(--muted2);line-height:1.7">
+              <strong style="color:var(--text);display:block;margin-bottom:.35rem">Model Logic</strong>
+              📈 <strong>Adoption %</strong> — logistic S-curve toward a ceiling driven by training + leadership.<br>
+              🏋️ <strong>Training hours</strong> lift both the ceiling (how far adoption can go) and the speed toward it.<br>
+              🤝 <strong>Leadership engagement</strong> models visible sponsorship, coaching, and accountability.<br>
+              📉 <strong>Resistance index</strong> — separate decaying curve: skepticism falls faster when programs are stronger.
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart + Table (right) -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">📊</span> Adoption % &amp; Resistance Index Over Time</div>
+            <div class="cw" style="height:340px"><canvas id="p8-chart"></canvas></div>
+          </div>
+
+          <div class="card">
+            <div class="card-hd"><span class="ci">📋</span> Adoption vs Resistance — Monthly Data</div>
+            <div style="max-height:260px;overflow-y:auto">
+              <table class="tbl" id="p8-tbl">
+                <thead><tr><th>Month</th><th>Adoption %</th><th>Resistance Index</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         PANEL 9 — Product Diffusion Simulator
+         ════════════════════════════════════════════ -->
+    <section id="p9" class="panel-section">
+
+      <!-- Context -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">🌐</span> Product Diffusion and Market Strategy</div>
+        <p style="font-size:.79rem;color:var(--muted2);line-height:1.7">
+          Simulate customer adoption using marketing spend, network effects, and market type (B2B/B2C).
+          The model uses a logistic S-curve where <strong style="color:var(--text)">marketing spend</strong> raises the adoption ceiling and accelerates timing,
+          <strong style="color:var(--text)">network effects</strong> amplify viral growth,
+          and <strong style="color:var(--text)">B2C vs B2B</strong> shifts diffusion speed.
+        </p>
+      </div>
+
+      <div class="g2" style="align-items:start">
+
+        <!-- Controls (left) -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">⚙️</span> Simulation Inputs</div>
+
+            <div class="ig">
+              <label>Market Type: <strong id="p9-market-val" style="color:var(--text)">B2C</strong></label>
+              <select id="p9-market" onchange="renderP9()">
+                <option value="B2C" selected>B2C (Consumer)</option>
+                <option value="B2B">B2B (Enterprise)</option>
+              </select>
+            </div>
+
+            <div class="ig" style="margin-top:.6rem">
+              <label>Marketing Spend (%): <strong id="p9-mkt-val" style="color:var(--text)">50%</strong></label>
+              <input type="range" id="p9-mkt" min="0" max="100" step="1" value="50" oninput="renderP9()">
+              <div class="slider-ticks"><span>0%</span><span>50%</span><span>100%</span></div>
+            </div>
+
+            <div class="ig" style="margin-top:.6rem">
+              <label>Network Effect (0–1): <strong id="p9-net-val" style="color:var(--text)">0.60</strong></label>
+              <input type="range" id="p9-net" min="0" max="1" step="0.01" value="0.6" oninput="renderP9()">
+              <div class="slider-ticks"><span>0</span><span>0.5</span><span>1.0</span></div>
+            </div>
+          </div>
+
+          <!-- KPIs -->
+          <div class="g2" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">Adoption @ 12 mo</div><div class="mv" id="p9-a12">—</div></div>
+            <div class="mc"><div class="ml">Adoption @ 18 mo</div><div class="mv" id="p9-a18">—</div></div>
+          </div>
+          <div class="g2" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">Adoption @ 24 mo</div><div class="mv" id="p9-a24">—</div></div>
+            <div class="mc"><div class="ml">Peak Monthly Gain</div><div class="mv" id="p9-gain">—</div></div>
+          </div>
+
+          <!-- Insight box -->
+          <div id="p9-insight-box" class="abox good"></div>
+        </div>
+
+        <!-- Chart (right) -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">📊</span> Customer Adoption Curve (24 months)</div>
+            <div class="cw" style="height:380px"><canvas id="p9-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         EC 1 — Cloud Cost Management Panel (Aaron)
+         ════════════════════════════════════════════ -->
+    <section id="ec1" class="panel-section">
+
+      <!-- Context -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">☁️</span> Cloud Cost Management Panel</div>
+        <p style="font-size:.79rem;color:var(--muted2);line-height:1.7">
+          Explore AWS spend with Cost Explorer — running in <span class="pill pill-blue">Demo Mode</span> with synthetic cost data.
+          Adjust the time range, grouping, and cost-reduction policy to simulate FinOps scenarios.
+        </p>
+      </div>
+
+      <div class="g2" style="align-items:start">
+
+        <!-- Controls (left) -->
+        <div>
+          <div class="card">
+            <div class="card-hd"><span class="ci">⚙️</span> Controls</div>
+
+            <div class="section-label">Time Range</div>
+            <div class="ig">
+              <label>Days of History: <strong id="ec1-days-val" style="color:var(--text)">90</strong></label>
+              <input type="range" id="ec1-days" min="7" max="365" step="1" value="90" oninput="renderEC1()">
+              <div class="slider-ticks"><span>7 d</span><span>186 d</span><span>365 d</span></div>
+            </div>
+
+            <div class="divider"></div>
+            <div class="section-label">Granularity</div>
+            <div class="radio-row" style="margin-bottom:.6rem">
+              <div class="rbtn active" id="ec1-btn-daily" onclick="ec1SetGran('DAILY')">Daily</div>
+              <div class="rbtn" id="ec1-btn-monthly" onclick="ec1SetGran('MONTHLY')">Monthly</div>
+            </div>
+
+            <div class="section-label">Group By</div>
+            <div class="ig">
+              <select id="ec1-groupby" onchange="renderEC1()">
+                <option value="Service" selected>Service</option>
+                <option value="Region">Region</option>
+                <option value="Linked Account">Linked Account</option>
+              </select>
+            </div>
+
+            <div class="ig">
+              <label>Top N Groups: <strong id="ec1-topn-val" style="color:var(--text)">8</strong></label>
+              <input type="range" id="ec1-topn" min="3" max="15" step="1" value="8" oninput="renderEC1()">
+              <div class="slider-ticks"><span>3</span><span>9</span><span>15</span></div>
+            </div>
+
+            <div class="divider"></div>
+            <div class="section-label">FinOps Policy Simulation</div>
+            <div class="ig">
+              <label>Cost Reduction (%): <strong id="ec1-red-val" style="color:var(--text)">0%</strong></label>
+              <input type="range" id="ec1-reduction" min="0" max="30" step="1" value="0" oninput="renderEC1()">
+              <div class="slider-ticks"><span>0%</span><span>15%</span><span>30%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI cards + insights (right) -->
+        <div>
+          <div class="g3" style="margin-bottom:.85rem">
+            <div class="mc"><div class="ml">MoM Change</div><div class="mv" id="ec1-m-mom">—</div><div class="ms" id="ec1-m-mom-sub">Last vs prior month</div></div>
+            <div class="mc"><div class="ml">Top-3 Concentration</div><div class="mv" id="ec1-m-conc">—</div><div class="ms">Share of total spend</div></div>
+            <div class="mc"><div class="ml">Projected Savings</div><div class="mv" id="ec1-m-save">—</div><div class="ms" id="ec1-m-save-sub">Period savings</div></div>
+          </div>
+
+          <!-- Anomaly box -->
+          <div id="ec1-anomaly-box" class="abox info" style="margin-bottom:.85rem"></div>
+
+          <!-- Spend by group chart -->
+          <div class="card">
+            <div class="card-hd"><span class="ci">📊</span> Spend by <span id="ec1-group-label">Service</span> (<span id="ec1-gran-label">daily</span>)</div>
+            <div class="cw" style="height:300px"><canvas id="ec1-spend-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total spend vs projected chart -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">📈</span> Total Spend vs Projected (Policy Simulation)
+          <span style="color:var(--muted);font-weight:400;font-size:.7rem" id="ec1-policy-note">&nbsp;— 0% reduction applied</span>
+        </div>
+        <div class="cw" style="height:260px"><canvas id="ec1-total-chart"></canvas></div>
+      </div>
+
+      <!-- Anomaly table -->
+      <div class="card">
+        <div class="card-hd"><span class="ci">⚠️</span> Anomaly Detection — Days Exceeding Mean + 2× Std Dev</div>
+        <div style="max-height:220px;overflow-y:auto">
+          <table class="tbl" id="ec1-anomaly-tbl">
+            <thead><tr><th>Date</th><th>Amount (USD)</th><th>Z-Score</th><th>Status</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════
+         EC 2 — End-to-End Cloud Product Deployment
+         ════════════════════════════════════════════ -->
+    <section id="ec2" class="panel-section">
+      <div class="card">
+        <div class="card-hd"><span class="ci">🚀</span> Extra Credit 2 — End-to-End Cloud Product Deployment</div>
+        <p style="font-size:.79rem;color:var(--muted2);line-height:1.75">
+	  This panel documents how the capstone dashboard is delivered as a cloud product: static hosting on <strong style="color:var(--text)">AWS Amplify</strong>,
+	  user authentication with <strong style="color:var(--text)">Amazon Cognito</strong>, and the supporting AWS edge and storage services that keep the app fast and secure.
+        </p>
+      </div>
+
+      <div class="g2" style="align-items:start">
+        <div class="card">
+          <div class="card-hd"><span class="ci">☁️</span> (1) AWS services in the stack</div>
+          <ul style="font-size:.78rem;color:var(--muted2);line-height:1.75;margin-left:1.1rem">
+            <li><strong style="color:var(--text)">Amazon Cognito User Pool</strong> — sign-up, sign-in, password recovery; issues JWT access / ID tokens for the browser.</li>
+            <li><strong style="color:var(--text)">AWS Amplify Hosting</strong> — CI/CD from Git, HTTPS, global distribution via CloudFront with S3 origin behind the scenes.</li>
+            <li><strong style="color:var(--text)">Amazon S3</strong> — stores static objects (HTML, CSS, JS) for each deployment; not accessed directly by end users when served through Amplify.</li>
+            <li><strong style="color:var(--text)">Amazon CloudFront</strong> — CDN caching and TLS termination at the edge (provided as part of Amplify Hosting).</li>
+            <li><strong style="color:var(--text)">AWS Amplify JS (CDN)</strong> — browser client configured with only the <em>public</em> User Pool ID and app client ID (no client secret in SPA flows).</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="ci">💵</span> (2) Estimated monthly cost</div>
+          <table class="tbl">
+            <thead><tr><th>Item</th><th>Free tier / notes</th><th>Rough scale</th></tr></thead>
+            <tbody>
+              <tr><td>Cognito MAUs</td><td>First 50k MAUs / month free (see current pricing)</td><td>Often $0 for class demos</td></tr>
+              <tr><td>Amplify Hosting</td><td>Build minutes + hosting GB-mo; small static sites often remain low</td><td>~$0–5/mo light traffic</td></tr>
+              <tr><td>S3 + CloudFront</td><td>Bundled into Amplify hosting charges; pay for egress beyond free tiers</td><td>Low until traffic spikes</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:.7rem;color:var(--muted);margin-top:.75rem;line-height:1.6">
+	    Figures are <strong>order-of-magnitude</strong> only; use the <a href="https://calculator.aws/" style="color:var(--accent)" target="_blank" rel="noopener noreferrer">AWS Pricing Calculator</a> and your own usage reports for commitments.
+          </p>
+        </div>
+      </div>
+
+      <div class="g2" style="align-items:start">
+        <div class="card">
+          <div class="card-hd"><span class="ci">🔐</span> (3) Security assumptions</div>
+          <ul style="font-size:.78rem;color:var(--muted2);line-height:1.75;margin-left:1.1rem">
+            <li>HTTPS only in production (Amplify default); protects tokens and credentials in transit.</li>
+            <li>Cognito validates passwords and MFA if enabled; the SPA stores session state via Amplify, not custom cookies with secrets.</li>
+            <li>JWTs are validated by AWS for API calls; this dashboard is static-only, so tokens are mainly for gating access and future API integration.</li>
+            <li><strong style="color:var(--text)">No secrets in Git</strong> — only public IDs in <code class="mono" style="color:var(--accent)">index.html</code>; never commit OAuth client secrets or IAM keys.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="ci">🛑</span> (4) Shutdown &amp; budget limiting</div>
+          <ul style="font-size:.78rem;color:var(--muted2);line-height:1.75;margin-left:1.1rem">
+            <li><strong style="color:var(--text)">AWS Budgets + billing alarms</strong> — email/SNS when forecasted or actual spend crosses a threshold (e.g. $5).</li>
+            <li><strong style="color:var(--text)">Disable Amplify app</strong> — stops builds and hosting charges for the frontend.</li>
+            <li><strong style="color:var(--text)">Delete Cognito user pool</strong> — removes auth and MAU metering after the course demo.</li>
+            <li>Review <strong>Cost Explorer</strong> and <strong>Free Tier</strong> usage monthly during the project.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><span class="ci">🗺️</span> Reference architecture (high level)</div>
+        <div class="mermaid-wrap" id="ec2-mermaid-wrap">
+          <div id="ec2-mermaid-out" style="min-height:200px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem">Loading diagram…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><span class="ci">📎</span> EC2 lab / instance deliverable (course materials)</div>
+        <p style="font-size:.78rem;color:var(--muted2);line-height:1.75">
+	  If your instructor requires a separate EC2-based artifact (e.g. WordPress or custom AMI), add links or screenshots here after deployment — for example:
+        </p>
+        <p style="font-size:.78rem;margin-top:.5rem">
+          <span class="pill pill-amber">Placeholder</span>
+          <strong style="color:var(--text)">EC2 instance public DNS / Elastic IP:</strong>
+          <span class="mono" style="color:var(--muted)">https://ec2-XX-XX-XX-XX.compute-1.amazonaws.com</span>
+	  — replace with your live URL or state “submitted via learning portal only.”
+        </p>
+      </div>
+    </section>
+
+  </div><!-- /panel-area -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════════════════ -->
+<script>
+// ── Panel switching ────────────────────────────────────────────────
+const PANEL_META = {
+  p1:{title:'Financial Plan Simulator v1',sub:'5-Year OpEx / CapEx / ROI Model',label:'Panel 1'},
+  p2:{title:'Financial Plan Simulator v2',sub:'Tangible + Intangible Returns',label:'Panel 2'},
+  p3:{title:'ERP Governance & Compliance',sub:'Frameworks, Controls & Governance Org Chart',label:'Panel 3'},
+  p4:{title:'Cloud Governance Model for ERP Migration',sub:'Governance Structure & SLA Monitoring Simulator · Panel 4',label:'Panel 4'},
+  p5:{title:'DevOps Pipeline Efficiency Simulator',sub:'CI/CD Automation & Team Size Trade-Off · Panel 5',label:'Panel 5'},
+  p6:{title:'Performance & Resilience Design',sub:'Uptime vs. Cost Trade-Off Simulator · Panel 6',label:'Panel 6'},
+  p7:{title:'Innovation & AI Integration — ROI Sensitivity Explorer',sub:'AI Investment vs. Data Quality · Panel 7 · Week 11',label:'Panel 7'},
+  p8:{title:'Adoption Curve — Training & Change Management',sub:'Employee Adoption Rate & Resistance Index · Panel 8 · Week 12',label:'Panel 8'},
+  p9:{title:'Product Diffusion & Market Strategy',sub:'Customer Adoption S-Curve Simulator · Panel 9 · Week 13',label:'Panel 9'},
+  ec1:{title:'Cloud Cost Management Panel',sub:'AWS Cost Explorer & FinOps Insights · Extra Credit 1',label:'EC 1'},
+  ec2:{title:'Deployment & Cloud Operations',sub:'Amplify Hosting · Cognito · Cost & security · Extra Credit 2',label:'EC 2'},
+};
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const tgt = item.dataset.target;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById(tgt).classList.add('active');
+    const m = PANEL_META[tgt];
+    document.getElementById('tb-title').textContent = m.title;
+    document.getElementById('tb-sub').textContent = m.sub;
+    document.getElementById('tb-panel').textContent = m.label;
+    if (tgt === 'p3') initP3();
+    if (tgt === 'p4') renderP4();
+    if (tgt === 'p5') renderP5();
+    if (tgt === 'p6') renderP6();
+    if (tgt === 'p7') renderP7();
+    if (tgt === 'p8') renderP8();
+    if (tgt === 'p9') renderP9();
+    if (tgt === 'ec1') renderEC1();
+    if (tgt === 'ec2') initEC2();
+    if (tgt === 'p2') renderP2();
+  });
+});
+
+// ── Helpers ────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmtM = x => isFinite(x) ? '$' + Math.round(x).toLocaleString() : '—';
+const fmtP = x => isFinite(x) ? (x*100).toFixed(1)+'%' : '—';
+const fmtDT = h => h >= 1 ? h.toFixed(2)+' hrs' : (h*60).toFixed(1)+' min';
+
+function buildCostPlan(opex, capex, chg, yrs=5) {
+  const r = chg/100; let cum = 0;
+  return Array.from({length:yrs}, (_,i) => {
+    const f = Math.pow(1+r,i);
+    const o=opex*f, c=capex*f, t=o+c; cum+=t;
+    return {year:i+1, opex:o, capex:c, total:t, cum};
+  });
+}
+
+function getBenefits(mode, inp, costs) {
+  return costs.map((_,i) => {
+    const raw = mode==='annual'
+      ? inp.ben * Math.pow(1+inp.bgrow/100,i)
+      : inp.team * inp.hpw * inp.wks * inp.rate;
+    return raw * (inp.real/100);
+  });
+}
+
+const CHART_OPTS = (xLabel) => ({
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{position:'top',labels:{color:'#7488a8',font:{size:11},boxWidth:12}}},
+  scales:{
+    x:{ticks:{color:'#7488a8',callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(31,45,74,.5)'},title:{display:true,text:xLabel||'',color:'#7488a8',font:{size:11}}},
+    y:{ticks:{color:'#7488a8'},grid:{color:'rgba(31,45,74,.5)'}},
+  }
+});
+
+// ── PANEL 1 ────────────────────────────────────────────────────────
+let p1Mode = 'annual', p1Chart = null;
+
+function p1SetMode(m) {
+  p1Mode = m;
+  $('p1-btn-ann').classList.toggle('active', m==='annual');
+  $('p1-btn-hrs').classList.toggle('active', m==='hours');
+  $('p1-ann').style.display = m==='annual' ? '' : 'none';
+  $('p1-hrs').style.display = m==='hours'  ? '' : 'none';
+  renderP1();
+}
+
+function renderP1() {
+  const opex  = +$('p1-opex').value||0;
+  const capex = +$('p1-capex').value||0;
+  const chg   = +$('p1-change').value||0;
+  const real  = +$('p1-real').value||80;
+  const disc  = +$('p1-disc').value||10;
+  const ben   = +$('p1-benefit').value||0;
+  const bgrow = +$('p1-bgrowth').value||0;
+  const team  = +$('p1-team').value||5;
+  const hpw   = +$('p1-hpw').value||1;
+  const rate  = +$('p1-rate').value||60;
+  const wks   = +$('p1-wks').value||48;
+
+  const plan = buildCostPlan(opex, capex, chg);
+  const costs = plan.map(d=>d.total);
+  const benefits = getBenefits(p1Mode, {ben,bgrow,team,hpw,rate,wks,real}, costs);
+
+  const sumO = plan.reduce((a,d)=>a+d.opex,0);
+  const sumC = plan.reduce((a,d)=>a+d.capex,0);
+  const sumT = plan.reduce((a,d)=>a+d.total,0);
+  const sumB = benefits.reduce((a,b)=>a+b,0);
+  const net  = sumB - sumT;
+  const roi  = sumT>0 ? net/sumT : NaN;
+  let npv = 0;
+  benefits.forEach((b,i) => npv += (b-costs[i]) / Math.pow(1+disc/100,i+1));
+
+  $('p1-m-opex').textContent = fmtM(sumO);
+  $('p1-m-capex').textContent = fmtM(sumC);
+  $('p1-m-tco').textContent   = fmtM(sumT);
+  $('p1-m-ben').textContent   = fmtM(sumB);
+  $('p1-m-net').textContent   = fmtM(net);
+  $('p1-m-roi').textContent   = fmtP(roi);
+  $('p1-m-npv').textContent   = 'NPV: ' + fmtM(npv);
+
+  const tbody = $('p1-tbl').querySelector('tbody');
+  tbody.innerHTML = plan.map(d =>
+    `<tr><td class="mono">Year ${d.year}</td><td class="mono">${fmtM(d.opex)}</td><td class="mono">${fmtM(d.capex)}</td><td class="mono">${fmtM(d.total)}</td><td class="mono">${fmtM(d.cum)}</td></tr>`
+  ).join('');
+
+  if (p1Chart) p1Chart.destroy();
+  p1Chart = new Chart($('p1-chart'), {
+    type:'bar',
+    data:{
+      labels: plan.map(d=>`Year ${d.year}`),
+      datasets:[
+        {label:'OpEx ($)',data:plan.map(d=>Math.round(d.opex)),backgroundColor:'rgba(165,28,48,.82)'},
+        {label:'CapEx ($)',data:plan.map(d=>Math.round(d.capex)),backgroundColor:'rgba(79,123,255,.82)'},
+        {label:'Total ($)',data:plan.map(d=>Math.round(d.total)),backgroundColor:'rgba(39,167,106,.82)'},
+      ]
+    },
+    options:{...CHART_OPTS('Dollars ($)'), indexAxis:'y'}
+  });
+}
+
+document.querySelectorAll('#p1 input').forEach(el => el.addEventListener('input', renderP1));
+renderP1();
+
+// ── PANEL 2 ────────────────────────────────────────────────────────
+let p2Mode = 'annual', p2CostChart = null, p2RoiChart = null;
+
+function p2SetMode(m) {
+  p2Mode = m;
+  $('p2-btn-ann').classList.toggle('active', m==='annual');
+  $('p2-btn-hrs').classList.toggle('active', m==='hours');
+  $('p2-ann').style.display = m==='annual' ? '' : 'none';
+  $('p2-hrs').style.display = m==='hours'  ? '' : 'none';
+  renderP2();
+}
+
+function renderP2() {
+  const opex  = +$('p2-opex').value||0;
+  const capex = +$('p2-capex').value||0;
+  const chg   = +$('p2-change').value||0;
+  const treal = +$('p2-treal').value||80;
+  const ireal = +$('p2-ireal').value||50;
+  const disc  = +$('p2-disc').value||10;
+  const tben  = +$('p2-tben').value||0;
+  const tgrow = +$('p2-tgrow').value||0;
+  const iben  = +$('p2-iben').value||0;
+  const igrow = +$('p2-igrow').value||0;
+  const team  = +$('p2-team').value||5;
+  const hpw   = +$('p2-hpw').value||1;
+  const rate  = +$('p2-rate').value||60;
+  const wks   = +$('p2-wks').value||48;
+
+  const plan = buildCostPlan(opex, capex, chg);
+  const costs = plan.map(d=>d.total);
+
+  const tangible = getBenefits(p2Mode, {ben:tben,bgrow:tgrow,team,hpw,rate,wks,real:treal}, costs);
+  const intangible = costs.map((_,i) => iben * Math.pow(1+igrow/100,i) * (ireal/100));
+  const totalRet = tangible.map((t,i) => t + intangible[i]);
+  const net = totalRet.map((r,i) => r - costs[i]);
+  const roiPct = costs.map((c,i) => c>0 ? net[i]/c : NaN);
+
+  const sumT = plan.reduce((a,d)=>a+d.total,0);
+  const sumTan = tangible.reduce((a,b)=>a+b,0);
+  const sumInt = intangible.reduce((a,b)=>a+b,0);
+  const sumRet = totalRet.reduce((a,b)=>a+b,0);
+  const sumNet = net.reduce((a,b)=>a+b,0);
+  const roi = sumT>0 ? sumNet/sumT : NaN;
+  let npv = 0;
+  net.forEach((n,i) => npv += n / Math.pow(1+disc/100,i+1));
+
+  $('p2-m-tco').textContent = fmtM(sumT);
+  $('p2-m-tan').textContent = fmtM(sumTan);
+  $('p2-m-int').textContent = fmtM(sumInt);
+  $('p2-m-ret').textContent = fmtM(sumRet);
+  $('p2-m-net').textContent = fmtM(sumNet);
+  $('p2-m-roi').textContent = fmtP(roi);
+  $('p2-m-npv').textContent = 'NPV: ' + fmtM(npv);
+
+  const tbody = $('p2-tbl').querySelector('tbody');
+  tbody.innerHTML = plan.map((d,i) =>
+    `<tr><td class="mono">Year ${d.year}</td><td class="mono">${fmtM(tangible[i])}</td><td class="mono">${fmtM(intangible[i])}</td><td class="mono">${fmtM(totalRet[i])}</td><td class="mono">${fmtP(roiPct[i])}</td></tr>`
+  ).join('');
+
+  if (p2CostChart) p2CostChart.destroy();
+  p2CostChart = new Chart($('p2-cost-chart'), {
+    type:'bar',
+    data:{
+      labels:plan.map(d=>`Year ${d.year}`),
+      datasets:[
+        {label:'OpEx ($)',data:plan.map(d=>Math.round(d.opex)),backgroundColor:'rgba(165,28,48,.82)'},
+        {label:'CapEx ($)',data:plan.map(d=>Math.round(d.capex)),backgroundColor:'rgba(79,123,255,.82)'},
+        {label:'Total ($)',data:plan.map(d=>Math.round(d.total)),backgroundColor:'rgba(39,167,106,.82)'},
+      ]
+    },
+    options:{...CHART_OPTS('Dollars ($)'), indexAxis:'y'}
+  });
+
+  if (p2RoiChart) p2RoiChart.destroy();
+  const roiData = roiPct.map(r => isFinite(r) ? +(r*100).toFixed(2) : 0);
+  const roiColors = roiData.map(v => v >= 0 ? 'rgba(39,167,106,.82)' : 'rgba(229,64,64,.82)');
+  p2RoiChart = new Chart($('p2-roi-chart'), {
+    type:'bar',
+    data:{
+      labels:plan.map(d=>`Year ${d.year}`),
+      datasets:[{label:'ROI % (undiscounted)',data:roiData,backgroundColor:roiColors}]
+    },
+    options:{
+      ...CHART_OPTS('ROI %'), indexAxis:'y',
+      plugins:{...CHART_OPTS('ROI %').plugins,
+        legend:{position:'top',labels:{color:'#7488a8',font:{size:11},boxWidth:12}}
+      }
+    }
+  });
+}
+
+document.querySelectorAll('#p2 input').forEach(el => el.addEventListener('input', renderP2));
+
+// ── PANEL 3 — Mermaid org chart ────────────────────────────────────
+let p3Ready = false;
+mermaid.initialize({startOnLoad:false, theme:'dark'});
+
+let ec2Ready = false;
+async function initEC2() {
+  if (ec2Ready) return;
+  ec2Ready = true;
+  const def = `flowchart LR
+    subgraph Client["User browser"]
+      U[SPA dashboard]
+    end
+    subgraph Edge["AWS edge"]
+      CF[CloudFront CDN]
+    end
+    subgraph Host["Amplify Hosting"]
+      AMP[Build + deploy]
+      S3[(S3 static objects)]
+    end
+    subgraph IdP["Auth"]
+      COG[Amazon Cognito User Pool]
+    end
+    U -->|HTTPS| CF
+    CF --> S3
+    AMP --> S3
+    U -->|Sign in / JWT| COG`;
+  try {
+    const {svg} = await mermaid.render('mermaid-ec2-arch', def);
+    $('ec2-mermaid-out').innerHTML = svg;
+  } catch(e) {
+    $('ec2-mermaid-out').textContent = 'Architecture diagram unavailable in this environment.';
+  }
+}
+
+async function initP3() {
+  if (p3Ready) return;
+  p3Ready = true;
+  const def = `graph TD
+    A[Board of Directors]
+    A --> B[Cloud Governance Board]
+    A --> C[Security & Risk Committee]
+    A --> D[Compliance & Audit Team]
+    A --> E[Execution Board]
+    E --> F[DevOps & Platform Engineering]
+    E --> G[Customer Success & Operations]
+    B --> H[Architecture Standards]
+    B --> I[Operational Guidelines]
+    C --> J[Vulnerability Management]
+    C --> K[Incident Response]
+    D --> L[SOC 2 & ISO 27001 Audits]
+    D --> M[Compliance Documentation]`;
+  try {
+    const {svg} = await mermaid.render('mermaid-org', def);
+    $('p3-mermaid-out').innerHTML = svg;
+  } catch(e) {
+    $('p3-mermaid-out').textContent = 'Org chart unavailable in this environment.';
+  }
+}
+
+// ── PANEL 6 — Performance & Resilience ────────────────────────────
+const P6_CFG = {
+  'Single Region':{
+    descs:['Single Instance — No Failover','Active-Passive Failover, Single AZ','Active-Active, Single AZ','Multi-AZ + Auto-Scaling ⭐ Optimal','Multi-AZ + Cross-Region Replication'],
+    uptime:[99.0,99.5,99.9,99.95,99.99],cost:[5000,9000,15000,23000,42000],color:'rgba(79,123,255,1)',fill:'rgba(79,123,255,.12)',
+  },
+  'Multi-Region':{
+    descs:['Single Region HA Cluster','2 Regions — Active-Passive','2 Regions — Active-Active','3 Regions — Full Mesh ⭐ Optimal','Global Edge + CDN Tier'],
+    uptime:[99.5,99.9,99.95,99.99,99.999],cost:[10000,18000,28000,45000,80000],color:'rgba(156,39,176,1)',fill:'rgba(156,39,176,.12)',
+  },
+};
+const LEVELS = ['Level 1','Level 2','Level 3','Level 4','Level 5'];
+let p6Region = 'Single Region', p6Idx = 3;
+let p6Main = null, p6Marg = null;
+
+function p6SetRegion(r) {
+  p6Region = r;
+  $('p6-btn-single').classList.toggle('active', r==='Single Region');
+  $('p6-btn-multi').classList.toggle('active', r==='Multi-Region');
+  renderP6();
+}
+function p6OnSlider(v) {
+  p6Idx = parseInt(v) - 1;
+  $('p6-level-lbl').textContent = `Level ${p6Idx+1}`;
+  renderP6();
+}
+
+function renderP6() {
+  const cfg = P6_CFG[p6Region];
+  const ref = P6_CFG[p6Region==='Single Region' ? 'Multi-Region' : 'Single Region'];
+  const idx = p6Idx;
+  const uptime = cfg.uptime[idx], cost = cfg.cost[idx];
+  const dt = (1 - uptime/100) * 8760;
+  const sla = uptime >= 99.9;
+
+  // Metrics
+  $('p6-m-level').textContent  = `Level ${idx+1}`;
+  $('p6-m-mode').textContent   = p6Region;
+  $('p6-m-uptime').textContent = uptime + '%';
+  $('p6-m-udelta').textContent = `+${(uptime-cfg.uptime[0]).toFixed(2)}% vs L1`;
+  $('p6-m-cost').textContent   = '$' + cost.toLocaleString();
+  $('p6-m-cdelta').textContent = `+$${(cost-cfg.cost[0]).toLocaleString()} vs L1`;
+  $('p6-m-dt').textContent     = fmtDT(dt);
+  const slaEl = $('p6-m-sla');
+  slaEl.textContent = sla ? '✅ SLA Met' : '⚠️ Below 99.9%';
+  slaEl.className = 'ms ' + (sla ? 'good' : 'bad');
+
+  // Sidebar summary
+  $('p6-sidebar-summary').innerHTML =
+    `<div style="margin-bottom:.3rem;font-weight:600;color:var(--text)">${cfg.descs[idx]}</div>
+     📈 Uptime: ${uptime}%<br>💰 Cost: $${cost.toLocaleString()}/mo<br>
+     ⏱ Downtime: ${fmtDT(dt)} / yr`;
+
+  // Analysis box
+  const ab = $('p6-abox');
+  if (idx === 3) {
+    ab.className = 'abox good';
+    ab.innerHTML = `<strong>✅ Optimal Configuration</strong>Level 4 delivers the best reliability-per-dollar: ${uptime}% uptime at $${cost.toLocaleString()}/mo. Upgrading to Level 5 adds +$${(cfg.cost[4]-cost).toLocaleString()}/mo for only +${(cfg.uptime[4]-uptime).toFixed(3)}% additional uptime.`;
+  } else if (idx < 3) {
+    ab.className = 'abox warn';
+    ab.innerHTML = `<strong>⚠️ Below Optimal${!sla ? ' — SLA Risk' : ''}</strong>${!sla ? 'This config does NOT meet the 99.9% SLA target. ' : ''}Upgrade to Level 4: +$${(cfg.cost[3]-cost).toLocaleString()}/mo → +${(cfg.uptime[3]-uptime).toFixed(2)}% uptime.`;
+  } else {
+    ab.className = 'abox info';
+    ab.innerHTML = `<strong>ℹ️ Above Optimal — Diminishing Returns</strong>Level 5 adds +${(uptime-cfg.uptime[3]).toFixed(3)}% uptime at +$${(cost-cfg.cost[3]).toLocaleString()}/mo vs Level 4. Justified only for the highest-criticality patient-data workloads.`;
+  }
+
+  // Main chart
+  const slaLinePlugin = {
+    id:'slaLine',
+    afterDraw(chart) {
+      const {ctx,scales:{x,y}} = chart;
+      const py = y.getPixelForValue(99.9);
+      ctx.save(); ctx.setLineDash([6,4]);
+      ctx.strokeStyle='rgba(39,167,106,.8)'; ctx.lineWidth=1.8;
+      ctx.beginPath(); ctx.moveTo(x.left,py); ctx.lineTo(x.right,py); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle='rgba(39,167,106,.9)';
+      ctx.font='11px Inter'; ctx.textAlign='right';
+      ctx.fillText('99.9% SLA target', x.right-5, py-5); ctx.restore();
+    }
+  };
+
+  const mkColors = (arr, aidx, baseColor) => arr.map((_,i)=>i===3?'rgba(39,167,106,1)':i===aidx&&i!==3?'rgba(240,169,48,1)':baseColor);
+  const mkSizes  = (arr, aidx) => arr.map((_,i)=>i===3||i===aidx?13:8);
+
+  if (p6Main) p6Main.destroy();
+  p6Main = new Chart($('p6-main-chart'), {
+    type:'line',
+    data:{
+      datasets:[
+        {
+          label: p6Region==='Single Region' ? 'Multi-Region (ref)' : 'Single Region (ref)',
+          data: ref.cost.map((c,i)=>({x:c,y:ref.uptime[i]})),
+          borderColor:'rgba(136,153,184,.45)', backgroundColor:'rgba(136,153,184,.45)',
+          borderDash:[5,5], borderWidth:2, pointRadius:5, tension:.4, pointHoverRadius:7,
+        },
+        {
+          label: p6Region,
+          data: cfg.cost.map((c,i)=>({x:c,y:cfg.uptime[i]})),
+          borderColor: cfg.color, backgroundColor: cfg.color,
+          borderWidth:3, tension:.4,
+          pointRadius: mkSizes(cfg.cost, idx),
+          pointBackgroundColor: mkColors(cfg.cost, idx, cfg.color),
+          pointHoverRadius:11,
+        },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{color:'#7488a8',font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>`$${c.raw.x.toLocaleString()}/mo | ${c.raw.y}% uptime`}}},
+      scales:{
+        x:{type:'linear',title:{display:true,text:'Monthly Cost (USD)',color:'#7488a8',font:{size:11}},ticks:{color:'#7488a8',callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(31,45,74,.5)'}},
+        y:{min:98.85,max:100.06,title:{display:true,text:'Uptime (%)',color:'#7488a8',font:{size:11}},ticks:{color:'#7488a8'},grid:{color:'rgba(31,45,74,.5)'}},
+      }
+    },
+    plugins:[slaLinePlugin],
+  });
+
+  // Marginal chart
+  const margCosts  = [0, ...cfg.cost.slice(1).map((c,i)=>(c-cfg.cost[i])/1000)];
+  const margUptime = [0, ...cfg.uptime.slice(1).map((u,i)=>u-cfg.uptime[i])];
+  const barColors  = LEVELS.map((_,i)=>i===3?'rgba(39,167,106,.85)':i===idx?'rgba(240,169,48,.85)':'rgba(79,123,255,.6)');
+
+  if (p6Marg) p6Marg.destroy();
+  p6Marg = new Chart($('p6-marg-chart'), {
+    type:'bar',
+    data:{
+      labels:LEVELS,
+      datasets:[
+        {label:'Marginal Cost ($K/mo)',data:margCosts,backgroundColor:barColors,yAxisID:'y'},
+        {label:'Marginal Uptime Gain (%)',data:margUptime,type:'line',borderColor:'rgba(240,169,48,1)',backgroundColor:'transparent',borderWidth:2.5,pointRadius:6,pointBackgroundColor:'rgba(240,169,48,1)',tension:.3,yAxisID:'y2'},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{color:'#7488a8',font:{size:11},boxWidth:12}}},
+      scales:{
+        x:{ticks:{color:'#7488a8'},grid:{color:'rgba(31,45,74,.5)'}},
+        y:{title:{display:true,text:'Marginal Cost ($K/mo)',color:'#7488a8',font:{size:11}},ticks:{color:'#7488a8'},grid:{color:'rgba(31,45,74,.5)'}},
+        y2:{position:'right',title:{display:true,text:'Marginal Uptime Gain (%)',color:'#7488a8',font:{size:11}},ticks:{color:'#7488a8'},grid:{drawOnChartArea:false}},
+      }
+    }
+  });
+
+  // Config table
+  const tbody = $('p6-cfg-tbl').querySelector('tbody');
+  tbody.innerHTML = LEVELS.map((name,i) => {
+    const dt2 = (1-cfg.uptime[i]/100)*8760;
+    const cls = i===3 ? 'opt' : (i===idx&&i!==3 ? 'sel' : '');
+    const tag = i===3 ? ' <span class="pill pill-green" style="font-size:.6rem">Optimal</span>' : (i===idx&&i!==3 ? ' <span class="pill pill-amber" style="font-size:.6rem">Selected</span>' : '');
+    return `<tr class="${cls}"><td class="mono">${name}${tag}</td><td style="font-size:.76rem">${cfg.descs[i]}</td><td class="mono">${cfg.uptime[i]}%</td><td class="mono">$${cfg.cost[i].toLocaleString()}</td><td class="mono">${fmtDT(dt2)}</td></tr>`;
+  }).join('');
+}
+
+// ── PANEL 4 — Cloud Governance & SLA ──────────────────────────────
+function renderP4() {
+  const uptime = parseFloat($('p4-uptime').value);
+  const resp   = parseInt($('p4-resp').value);
+  const rec    = parseInt($('p4-rec').value);
+
+  $('p4-uptime-val').textContent = uptime.toFixed(2);
+  $('p4-resp-val').textContent   = resp;
+  $('p4-rec-val').textContent    = rec;
+
+  const uptimeMet = uptime >= 99.99;
+  const respMet   = resp <= 15;
+  const recMet    = rec <= 60;
+
+  const slaBox = (el, met, metMsg, failMsg) => {
+    el.className = 'abox ' + (met ? 'good' : 'warn');
+    el.innerHTML = `<strong>${met ? '✅ ' + metMsg : '⚠️ ' + failMsg}</strong>`;
+  };
+
+  slaBox($('p4-sla-uptime'), uptimeMet, 'Uptime SLA Met', 'Uptime Below 99.99% Target');
+  slaBox($('p4-sla-resp'),   respMet,   'Incident Response SLA Met', 'Response Time Too Slow (> 15 min)');
+  slaBox($('p4-sla-rec'),    recMet,    'Disaster Recovery SLA Met', 'Recovery Time Exceeds 60 min Target');
+}
+
+// ── PANEL 5 — DevOps Pipeline Simulator ───────────────────────────
+let p5Chart = null;
+
+function renderP5() {
+  const auto = parseInt($('p5-auto').value);
+  const team = parseInt($('p5-team').value);
+
+  $('p5-auto-val').textContent = auto;
+  $('p5-team-val').textContent = team;
+
+  const dep  = (auto * 0.12) + (team * 0.8);
+  const fail = Math.max(2, 35 - (auto * 0.3) + (team * 0.5));
+  const mttr = Math.max(0.5, 10 - (auto * 0.08) + (team * 0.2));
+
+  $('p5-m-dep').textContent  = dep.toFixed(2);
+  $('p5-m-fail').textContent = fail.toFixed(2) + '%';
+  $('p5-m-mttr').textContent = mttr.toFixed(2) + ' h';
+
+  const hb = $('p5-health-box');
+  if (auto > 70 && fail < 10) {
+    hb.className = 'abox good';
+    hb.innerHTML = '<strong>🟢 Healthy Pipeline</strong>High automation with low failure rate. This configuration is production-ready.';
+  } else if (auto >= 40 && auto <= 70) {
+    hb.className = 'abox warn';
+    hb.innerHTML = '<strong>🟡 Moderate Pipeline</strong>Acceptable automation level. Consider increasing automation to reduce failure rate further.';
+  } else {
+    hb.className = 'abox';
+    hb.style.background = 'rgba(229,64,64,.1)';
+    hb.style.borderLeft = '4px solid var(--red)';
+    hb.innerHTML = '<strong>🔴 Risky Pipeline</strong>Low automation or high team overhead. Significant risk of deployment failures and slow recovery.';
+  }
+
+  // Scenario table (3 presets, using current team size for failure calc like original)
+  const scenarios = [
+    {auto:50, team:5}, {auto:70, team:7}, {auto:90, team:10}
+  ];
+  const tbody = $('p5-scenarios').querySelector('tbody');
+  tbody.innerHTML = scenarios.map(s => {
+    const d = (s.auto*0.12)+(s.team*0.8);
+    const f = Math.max(2, 35-(s.auto*0.3)+(team*0.5));
+    const m = Math.max(0.5, 10-(s.auto*0.08)+(s.team*0.2));
+    return `<tr>
+      <td class="mono">${s.auto}%</td><td class="mono">${s.team}</td>
+      <td class="mono">${d.toFixed(2)}</td><td class="mono">${f.toFixed(2)}%</td>
+      <td class="mono">${m.toFixed(2)} hrs</td>
+    </tr>`;
+  }).join('');
+
+  // Line chart: automation 0–100 step 5
+  const autoRange = Array.from({length:21}, (_,i) => i*5);
+  const depLine  = autoRange.map(a => (a*0.12) + (team*0.8));
+  const failLine = autoRange.map(a => Math.max(2, 35-(a*0.3)+(team*0.5)));
+
+  if (p5Chart) p5Chart.destroy();
+  p5Chart = new Chart($('p5-chart'), {
+    type:'line',
+    data:{
+      labels: autoRange.map(a => a+'%'),
+      datasets:[
+        {
+          label:'Deployments / Week',
+          data: depLine,
+          borderColor:'rgba(39,167,106,1)',
+          backgroundColor:'rgba(39,167,106,.12)',
+          borderWidth:2.5, pointRadius:4, tension:.4, fill:true, yAxisID:'y',
+        },
+        {
+          label:'Failure Rate (%)',
+          data: failLine,
+          borderColor:'rgba(229,64,64,1)',
+          backgroundColor:'rgba(229,64,64,.08)',
+          borderWidth:2.5, pointRadius:4, tension:.4, fill:true, yAxisID:'y2',
+        },
+        // Vertical line at current automation
+        {
+          label:`Current (${auto}%)`,
+          data: autoRange.map(a => a===Math.round(auto/5)*5 ? depLine[autoRange.indexOf(Math.round(auto/5)*5)] : null),
+          borderColor:'rgba(240,169,48,.8)',
+          borderWidth:2, borderDash:[4,4], pointRadius:8,
+          pointBackgroundColor:'rgba(240,169,48,1)', showLine:false, yAxisID:'y',
+        },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{color:'#7488a8',font:{size:11},boxWidth:12}}},
+      scales:{
+        x:{ticks:{color:'#7488a8'},grid:{color:'rgba(31,45,74,.5)'},title:{display:true,text:'Automation Level (%)',color:'#7488a8',font:{size:11}}},
+        y:{ticks:{color:'#7488a8'},grid:{color:'rgba(31,45,74,.5)'},title:{display:true,text:'Deployments / Week',color:'#7488a8',font:{size:11}}},
+        y2:{position:'right',ticks:{color:'#7488a8'},grid:{drawOnChartArea:false},title:{display:true,text:'Failure Rate (%)',color:'#7488a8',font:{size:11}}},
+      }
+    }
+  });
+}
+
+// ── PANEL 7 — AI ROI Explorer (Chloe's model) ────────────────────
+let p7MainChart = null, p7QualChart = null;
+
+// Chloe's ROI model — saturation curve with data-quality gating
+// Investment saturates after ~$300K; data quality scales and caps ROI.
+const P7_I_SCALE = 135000;
+const P7_ROI_CEILING = 92.0;
+const P7_ZONE_UNDER = 120000;
+const P7_ZONE_OPTIMAL = 300000;
+
+function calcAiROI(investment, dataQualityPct) {
+  const inv = Math.max(0, investment);
+  const dq = Math.min(1, Math.max(0, dataQualityPct / 100));
+  const invFactor = 1 - Math.exp(-inv / P7_I_SCALE);
+  const dqFactor = 0.12 + 0.88 * Math.pow(dq, 1.85);
+  return Math.min(150, P7_ROI_CEILING * invFactor * dqFactor);
+}
+
+// Chart.js plugin: colored vertical zone bands behind data
+const p7ZonePlugin = {
+  id: 'p7Zones',
+  beforeDraw(chart) {
+    const {ctx, chartArea: {left, right, top, bottom}, scales: {x}} = chart;
+    const zones = [
+      {x0: 0,              x1: P7_ZONE_UNDER,   color: 'rgba(239,68,68,0.14)',  label: 'Underinvestment'},
+      {x0: P7_ZONE_UNDER,  x1: P7_ZONE_OPTIMAL, color: 'rgba(234,179,8,0.17)',  label: 'Optimal range'},
+      {x0: P7_ZONE_OPTIMAL,x1: 500000,           color: 'rgba(34,197,94,0.14)',  label: 'Diminishing returns'},
+    ];
+    ctx.save();
+    zones.forEach(z => {
+      const px0 = Math.max(left, x.getPixelForValue(z.x0));
+      const px1 = Math.min(right, x.getPixelForValue(z.x1));
+      ctx.fillStyle = z.color;
+      ctx.fillRect(px0, top, px1 - px0, bottom - top);
+      ctx.fillStyle = 'rgba(148,163,184,0.6)';
+      ctx.font = '10px Inter';
+      ctx.textAlign = 'left';
+      ctx.fillText(z.label, px0 + 6, top + 14);
+    });
+    ctx.restore();
+  }
+};
+
+function renderP7() {
+  const inv  = parseInt($('p7-inv').value);
+  const qual = parseInt($('p7-qual').value);
+
+  $('p7-inv-val').textContent  = '$' + inv.toLocaleString();
+  $('p7-qual-val').textContent = qual + '%';
+
+  const roi = calcAiROI(inv, qual);
+  const net5yr = inv * (roi / 100);
+  const effScore = inv > 0 ? (roi / (inv / 10000)).toFixed(1) : '0.0';
+
+  $('p7-m-roi').textContent = roi.toFixed(1) + '%';
+  $('p7-m-net').textContent = '$' + Math.round(net5yr).toLocaleString();
+  $('p7-m-eff').textContent = effScore;
+
+  // Zone box
+  const zb = $('p7-zone-box');
+  if (inv < P7_ZONE_UNDER) {
+    zb.className = 'abox';
+    zb.style.background = 'rgba(229,64,64,.1)'; zb.style.borderLeft = '4px solid var(--red)';
+    zb.innerHTML = `<strong>🔴 Underinvestment Zone (&lt; $${(P7_ZONE_UNDER/1000)}K)</strong>Low ROI typical of underinvestment. Increase spend toward $${(P7_ZONE_UNDER/1000)}K+ for meaningful returns.`;
+  } else if (inv <= P7_ZONE_OPTIMAL) {
+    zb.className = 'abox good'; zb.style.background = ''; zb.style.borderLeft = '';
+    zb.innerHTML = `<strong>🟡 Optimal Range ($${(P7_ZONE_UNDER/1000)}K – $${(P7_ZONE_OPTIMAL/1000)}K)</strong>Strong returns before saturation. At $${inv.toLocaleString()} + ${qual}% data quality → <strong>${roi.toFixed(1)}% ROI</strong>. Most growth happens here.`;
+  } else {
+    zb.className = 'abox info'; zb.style.background = ''; zb.style.borderLeft = '';
+    zb.innerHTML = `<strong>🟢 Diminishing Returns (&gt; $${(P7_ZONE_OPTIMAL/1000)}K)</strong>Plateau reached — additional $${(inv - P7_ZONE_OPTIMAL).toLocaleString()} yields marginal ROI gain. Redirect excess budget to data quality improvements.`;
+  }
+
+  // ── Main chart: ROI vs Investment with colored zone bands ──────
+  const N = 200;
+  const invRange = Array.from({length: N + 1}, (_, i) => i * (500000 / N));
+  const roiCurve = invRange.map(v => calcAiROI(v, qual));
+  const roiMax = Math.max(25, Math.max(...roiCurve) * 1.15);
+
+  if (p7MainChart) p7MainChart.destroy();
+  p7MainChart = new Chart($('p7-main-chart'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'ROI vs Investment',
+          data: invRange.map((v, i) => ({x: v, y: roiCurve[i]})),
+          showLine: true,
+          borderColor: '#2563eb',
+          backgroundColor: 'transparent',
+          borderWidth: 3,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+        },
+        {
+          label: 'Current selection',
+          data: [{x: inv, y: roi}],
+          pointRadius: 12,
+          pointBackgroundColor: '#dc2626',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointStyle: 'circle',
+          showLine: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {position: 'bottom', labels: {color: '#7488a8', font: {size: 11}, boxWidth: 12, usePointStyle: true}},
+        tooltip: {callbacks: {label: c => `Investment: $${c.raw.x.toLocaleString()}  |  ROI: ${c.raw.y.toFixed(1)}%`}},
+      },
+      scales: {
+        x: {
+          type: 'linear', min: 0, max: 500000,
+          ticks: {color: '#7488a8', callback: v => '$' + (v/1000) + 'K'},
+          grid: {color: 'rgba(31,45,74,.5)'},
+          title: {display: true, text: 'AI Investment ($)', color: '#7488a8', font: {size: 11}},
+        },
+        y: {
+          min: 0, max: Math.min(105, roiMax),
+          ticks: {color: '#7488a8', callback: v => v.toFixed(0) + '%'},
+          grid: {color: 'rgba(31,45,74,.5)'},
+          title: {display: true, text: 'ROI (%)', color: '#7488a8', font: {size: 11}},
+        },
+      },
+      interaction: {mode: 'nearest', axis: 'x', intersect: false},
+    },
+    plugins: [p7ZonePlugin],
+  });
+
+  // ── Quality chart: ROI vs Data Quality at current investment ───
+  const qualRange = Array.from({length: 101}, (_, i) => i);
+  const qualCurve = qualRange.map(q => calcAiROI(inv, q));
+  const qualColors = qualRange.map(q =>
+    q < 60 ? 'rgba(229,64,64,.7)' : q < 80 ? 'rgba(240,169,48,.7)' : 'rgba(39,167,106,.7)'
+  );
+
+  if (p7QualChart) p7QualChart.destroy();
+  p7QualChart = new Chart($('p7-qual-chart'), {
+    type: 'bar',
+    data: {
+      labels: qualRange.map(q => q % 20 === 0 ? q + '%' : ''),
+      datasets: [{
+        label: 'ROI % at Current Investment',
+        data: qualCurve,
+        backgroundColor: qualColors,
+        borderRadius: 2, borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {display: false},
+        tooltip: {callbacks: {
+          title: items => `Data Quality: ${qualRange[items[0].dataIndex]}%`,
+          label: c => `ROI: ${c.raw.toFixed(1)}%`
+        }}
+      },
+      scales: {
+        x: {ticks: {color: '#7488a8'}, grid: {color: 'rgba(31,45,74,.4)'}, title: {display: true, text: 'Data Quality (%)', color: '#7488a8', font: {size: 11}}},
+        y: {ticks: {color: '#7488a8', callback: v => v.toFixed(0) + '%'}, grid: {color: 'rgba(31,45,74,.4)'}, title: {display: true, text: 'ROI (%)', color: '#7488a8', font: {size: 11}}, min: 0, max: 100},
+      }
+    }
+  });
+}
+
+// ── PANEL 8 — Adoption Curve (Aaron's model) ─────────────────────
+let p8Chart = null;
+
+function p8Clamp(x, lo, hi) {
+  if (!isFinite(x)) return lo;
+  return Math.max(lo, Math.min(hi, x));
+}
+
+function simulateAdoption(trainingH, leadershipPct, months) {
+  const rows = [];
+  const ceiling = p8Clamp(35.0 + 0.9 * trainingH + 0.22 * leadershipPct, 5, 95);
+  const k  = p8Clamp(0.12 + 0.0035 * trainingH + 0.0018 * leadershipPct, 0.05, 0.55);
+  const t0 = p8Clamp(10.0 - 0.12 * trainingH - 0.06 * leadershipPct, 2, 18);
+  const r0 = p8Clamp(88.0 - 0.55 * trainingH - 0.22 * leadershipPct, 18, 100);
+  const decay = p8Clamp(0.055 + 0.0018 * trainingH + 0.0010 * leadershipPct, 0.02, 0.35);
+
+  for (let t = 0; t <= months; t++) {
+    const adoption = ceiling / (1 + Math.exp(-k * (t - t0)));
+    const resistance = Math.min(100, Math.max(0, r0 * Math.exp(-decay * t)));
+    rows.push({month: t, adoption: +adoption.toFixed(2), resistance: +resistance.toFixed(2)});
+  }
+  return rows;
+}
+
+function renderP8() {
+  const train   = parseInt($('p8-train').value);
+  const lead    = parseInt($('p8-lead').value);
+  const horizon = parseInt($('p8-horizon').value);
+
+  $('p8-train-val').textContent   = train;
+  $('p8-lead-val').textContent    = lead + '%';
+  $('p8-horizon-val').textContent = horizon;
+
+  const data = simulateAdoption(train, lead, horizon);
+  const last = data[data.length - 1];
+
+  $('p8-m-adopt').textContent  = last.adoption.toFixed(1) + '%';
+  $('p8-m-resist').textContent = last.resistance.toFixed(1);
+
+  // Insight box
+  const ib = $('p8-insight-box');
+  if (last.adoption >= 70) {
+    ib.className = 'abox good';
+    ib.innerHTML = `<strong>🟢 Strong Adoption (${last.adoption.toFixed(1)}%)</strong>Training and leadership investment are driving high adoption. Resistance has dropped to ${last.resistance.toFixed(1)} — change is well underway.`;
+  } else if (last.adoption >= 40) {
+    ib.className = 'abox warn';
+    ib.innerHTML = `<strong>🟡 Moderate Adoption (${last.adoption.toFixed(1)}%)</strong>Adoption is progressing but hasn't reached critical mass. Consider increasing training hours or leadership engagement to accelerate the curve.`;
+  } else {
+    ib.className = 'abox';
+    ib.style.background = 'rgba(229,64,64,.1)';
+    ib.style.borderLeft = '4px solid var(--red)';
+    ib.innerHTML = `<strong>🔴 Low Adoption (${last.adoption.toFixed(1)}%)</strong>Significant resistance remains (${last.resistance.toFixed(1)}). Investment in training and visible leadership sponsorship is critical to drive change.`;
+  }
+
+  // Dual-axis chart
+  const labels    = data.map(d => d.month);
+  const adoptLine = data.map(d => d.adoption);
+  const resistLine = data.map(d => d.resistance);
+
+  if (p8Chart) p8Chart.destroy();
+  p8Chart = new Chart($('p8-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Adoption %',
+          data: adoptLine,
+          borderColor: '#2ecc71',
+          backgroundColor: 'rgba(46,204,113,.1)',
+          borderWidth: 3, tension: 0.4, fill: true,
+          pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y',
+        },
+        {
+          label: 'Resistance Index',
+          data: resistLine,
+          borderColor: '#e74c3c',
+          backgroundColor: 'transparent',
+          borderWidth: 2, borderDash: [6, 4], tension: 0.4,
+          pointRadius: 0, pointHoverRadius: 5, yAxisID: 'y2',
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {position: 'top', labels: {color: '#7488a8', font: {size: 11}, boxWidth: 12}},
+        tooltip: {mode: 'index', intersect: false},
+      },
+      scales: {
+        x: {
+          ticks: {color: '#7488a8'}, grid: {color: 'rgba(31,45,74,.5)'},
+          title: {display: true, text: 'Time (months)', color: '#7488a8', font: {size: 11}},
+        },
+        y: {
+          min: 0, max: 100,
+          ticks: {color: '#2ecc71', callback: v => v + '%'},
+          grid: {color: 'rgba(31,45,74,.5)'},
+          title: {display: true, text: 'Adoption %', color: '#2ecc71', font: {size: 11}},
+        },
+        y2: {
+          position: 'right', min: 0, max: 100,
+          ticks: {color: '#e74c3c'},
+          grid: {drawOnChartArea: false},
+          title: {display: true, text: 'Resistance Index (0–100)', color: '#e74c3c', font: {size: 11}},
+        },
+      },
+      interaction: {mode: 'nearest', axis: 'x', intersect: false},
+    }
+  });
+
+  // Table
+  const tbody = $('p8-tbl').querySelector('tbody');
+  tbody.innerHTML = data.map(d =>
+    `<tr><td class="mono">${d.month}</td><td class="mono">${d.adoption.toFixed(2)}%</td><td class="mono">${d.resistance.toFixed(2)}</td></tr>`
+  ).join('');
+}
+
+// ── PANEL 9 — Product Diffusion Simulator ─────────────────────────
+let p9Chart = null;
+const P9_MONTHS = Array.from({length: 25}, (_, i) => i);
+
+function p9AdoptionCurve(type, marketingPct, netEff) {
+  const isB2C = type === 'B2C';
+  const L = Math.max(28, Math.min(95, 44 + 0.34 * marketingPct + 30 * netEff + (isB2C ? 6 : -4)));
+  const k = 0.10 + marketingPct / 500 + netEff * 0.35 + (isB2C ? 0.03 : -0.01);
+  const t0 = 12 - marketingPct / 25 - netEff * 3 + (isB2C ? -1 : 1);
+  return P9_MONTHS.map(t => L / (1 + Math.exp(-k * (t - t0))));
+}
+
+function renderP9() {
+  const type = $('p9-market').value;
+  const mkt = parseInt($('p9-mkt').value);
+  const net = parseFloat($('p9-net').value);
+
+  $('p9-market-val').textContent = type;
+  $('p9-mkt-val').textContent = mkt + '%';
+  $('p9-net-val').textContent = net.toFixed(2);
+
+  const curve = p9AdoptionCurve(type, mkt, net);
+
+  $('p9-a12').textContent = curve[12].toFixed(1) + '%';
+  $('p9-a18').textContent = curve[18].toFixed(1) + '%';
+  $('p9-a24').textContent = curve[24].toFixed(1) + '%';
+
+  const gains = curve.slice(1).map((v, i) => v - curve[i]);
+  const peak = Math.max(...gains);
+  $('p9-gain').textContent = peak.toFixed(2) + ' pp';
+
+  // Insight box
+  const ib = $('p9-insight-box');
+  const netMsg = net > 0.6 ? 'strong network effects' : 'modest network effects';
+  const mktMsg = type === 'B2C' ? 'consumer market diffusion is faster' : 'enterprise market diffusion is slower but steadier';
+
+  if (curve[18] >= 70 && type === 'B2C' && net > 0.6) {
+    ib.className = 'abox good';
+    ib.innerHTML = `<strong>🟢 High Adoption</strong>B2C with network effect ${net.toFixed(2)} crosses 70% by month 18 (${curve[18].toFixed(1)}%), matching the expected Section 11 behavior.`;
+  } else if (curve[24] >= 50) {
+    ib.className = 'abox good';
+    ib.innerHTML = `<strong>🟢 Healthy Diffusion</strong>${mktMsg}; with ${netMsg}, adoption reaches ${curve[18].toFixed(1)}% by month 18 and ${curve[24].toFixed(1)}% by month 24.`;
+  } else {
+    ib.className = 'abox warn';
+    ib.innerHTML = `<strong>🟡 Slow Diffusion</strong>${mktMsg}; with ${netMsg}, adoption only reaches ${curve[24].toFixed(1)}% by month 24. Consider increasing marketing spend or network effects.`;
+  }
+
+  // Chart
+  const isB2C = type === 'B2C';
+  const lineColor = isB2C ? 'rgba(79,123,255,1)' : 'rgba(15,139,131,1)';
+  const fillColor = isB2C ? 'rgba(79,123,255,.12)' : 'rgba(15,139,131,.12)';
+
+  if (p9Chart) p9Chart.destroy();
+  p9Chart = new Chart($('p9-chart'), {
+    type: 'line',
+    data: {
+      labels: P9_MONTHS,
+      datasets: [
+        {
+          label: 'Adoption Curve (%)',
+          data: curve,
+          borderColor: lineColor,
+          backgroundColor: fillColor,
+          fill: true, borderWidth: 3, tension: 0.32, pointRadius: 0, pointHoverRadius: 5,
+        },
+        {
+          label: '70% Reference',
+          data: P9_MONTHS.map(() => 70),
+          borderColor: 'rgba(39,167,106,.6)',
+          borderDash: [6, 6], borderWidth: 2, pointRadius: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {position: 'top', labels: {color: '#7488a8', font: {size: 11}, boxWidth: 12}},
+        tooltip: {callbacks: {label: c => `${c.dataset.label}: ${c.raw.toFixed(1)}%`}},
+      },
+      scales: {
+        x: {
+          ticks: {color: '#7488a8'}, grid: {color: 'rgba(31,45,74,.5)'},
+          title: {display: true, text: 'Months', color: '#7488a8', font: {size: 11}},
+        },
+        y: {
+          min: 0, max: 100,
+          ticks: {color: '#7488a8', callback: v => v + '%'},
+          grid: {color: 'rgba(31,45,74,.5)'},
+          title: {display: true, text: 'Customer Adoption (%)', color: '#7488a8', font: {size: 11}},
+        },
+      },
+      interaction: {mode: 'nearest', axis: 'x', intersect: false},
+    }
+  });
+}
+
+// ── EC 1 — Cloud Cost Management Panel (Aaron) ───────────────────
+let ec1SpendChart = null, ec1TotalChart = null, ec1Gran = 'DAILY';
+
+// Seeded PRNG (mulberry32) to match Python random.seed(42)
+function ec1Rng(seed) {
+  let s = seed | 0;
+  return function() {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function ec1Gauss(rng, mu, sigma) {
+  let u, v, s;
+  do { u = rng() * 2 - 1; v = rng() * 2 - 1; s = u * u + v * v; } while (s >= 1 || s === 0);
+  return mu + sigma * u * Math.sqrt(-2 * Math.log(s) / s);
+}
+
+const EC1_SERVICES = ['Amazon EC2','Amazon S3','Amazon RDS','AWS Lambda','Amazon CloudWatch','Amazon VPC','Amazon ElastiCache','Other'];
+const EC1_REGIONS = ['us-east-1','us-west-2','eu-west-1','ap-southeast-1','global'];
+const EC1_COLORS = [
+  'rgba(79,123,255,.85)','rgba(39,167,106,.85)','rgba(165,28,48,.85)','rgba(240,169,48,.85)',
+  'rgba(156,39,176,.85)','rgba(0,188,212,.85)','rgba(255,87,34,.85)','rgba(121,134,203,.85)',
+  'rgba(255,183,77,.85)','rgba(77,182,172,.85)','rgba(229,115,115,.85)','rgba(149,117,205,.85)',
+  'rgba(220,231,117,.85)','rgba(255,138,101,.85)','rgba(128,203,196,.85)',
+];
+
+function ec1GenerateData(daysBack, gran, groupBy, topN) {
+  const rng = ec1Rng(42);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(today); start.setDate(start.getDate() - daysBack + 1);
+
+  let names;
+  if (groupBy === 'Region') names = EC1_REGIONS.slice(0, Math.max(3, Math.min(topN, 5)));
+  else if (groupBy === 'Linked Account') names = Array.from({length: Math.max(3, Math.min(topN, 8))}, (_, i) => `Account-${1000 + i}`);
+  else names = EC1_SERVICES.slice(0, Math.max(3, Math.min(topN, EC1_SERVICES.length)));
+
+  const base = {};
+  names.forEach(n => { base[n] = 20 + rng() * 100; });
+
+  const dates = [];
+  if (gran === 'MONTHLY') {
+    const d = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (d <= today) { dates.push(new Date(d)); d.setMonth(d.getMonth() + 1); }
+  } else {
+    const d = new Date(start);
+    while (d <= today) { dates.push(new Date(d)); d.setDate(d.getDate() + 1); }
+  }
+
+  const rows = [];
+  const totalLen = dates.length;
+  const spikeDay = Math.floor(totalLen / 3);
+  dates.forEach((dt, i) => {
+    const t = i / Math.max(totalLen, 1);
+    names.forEach(n => {
+      const noise = ec1Gauss(rng, 0, 8);
+      const trend = 1.0 + 0.15 * t;
+      const seasonal = 1.0 + 0.08 * (i % 7) / 7.0;
+      const spike = (gran === 'DAILY' && i === spikeDay) ? 35 : 0;
+      const amt = Math.max(0, base[n] * trend * seasonal + noise + spike);
+      rows.push({date: new Date(dt), group: n, amount: +amt.toFixed(4)});
+    });
+  });
+
+  // Keep only top N by total spend
+  const totals = {};
+  rows.forEach(r => { totals[r.group] = (totals[r.group] || 0) + r.amount; });
+  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, topN);
+  const keep = new Set(sorted.map(e => e[0]));
+  return rows.filter(r => keep.has(r.group));
+}
+
+function ec1DailyTotals(rows) {
+  const map = {};
+  rows.forEach(r => {
+    const key = r.date.toISOString().slice(0, 10);
+    map[key] = (map[key] || 0) + r.amount;
+  });
+  return Object.entries(map).sort().map(([d, a]) => ({date: d, amount: a}));
+}
+
+function ec1MoM(daily) {
+  if (daily.length < 2) return null;
+  const months = {};
+  daily.forEach(d => { const ym = d.date.slice(0, 7); months[ym] = (months[ym] || 0) + d.amount; });
+  const keys = Object.keys(months).sort();
+  if (keys.length < 2) return null;
+  const last = months[keys[keys.length - 1]];
+  const prev = months[keys[keys.length - 2]];
+  if (prev === 0) return null;
+  return ((last - prev) / Math.abs(prev)) * 100;
+}
+
+function ec1TopConc(rows, n) {
+  const totals = {};
+  rows.forEach(r => { totals[r.group] = (totals[r.group] || 0) + r.amount; });
+  const sorted = Object.values(totals).sort((a, b) => b - a);
+  const total = sorted.reduce((a, b) => a + b, 0);
+  if (total === 0) return null;
+  return (sorted.slice(0, n).reduce((a, b) => a + b, 0) / total) * 100;
+}
+
+function ec1Anomalies(daily) {
+  if (daily.length < 3) return [];
+  const amounts = daily.map(d => d.amount);
+  const mu = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+  const sigma = Math.sqrt(amounts.reduce((a, v) => a + (v - mu) ** 2, 0) / amounts.length);
+  if (sigma === 0) return [];
+  return daily.map(d => {
+    const z = (d.amount - mu) / sigma;
+    return {...d, z, anomaly: z > 2.0};
+  }).filter(d => d.anomaly);
+}
+
+function ec1SetGran(g) {
+  ec1Gran = g;
+  $('ec1-btn-daily').classList.toggle('active', g === 'DAILY');
+  $('ec1-btn-monthly').classList.toggle('active', g === 'MONTHLY');
+  renderEC1();
+}
+
+function renderEC1() {
+  const days = parseInt($('ec1-days').value);
+  const groupBy = $('ec1-groupby').value;
+  const topN = parseInt($('ec1-topn').value);
+  const reduction = parseInt($('ec1-reduction').value);
+
+  $('ec1-days-val').textContent = days;
+  $('ec1-topn-val').textContent = topN;
+  $('ec1-red-val').textContent = reduction + '%';
+  $('ec1-group-label').textContent = groupBy;
+  $('ec1-gran-label').textContent = ec1Gran.toLowerCase();
+  $('ec1-policy-note').textContent = reduction > 0 ? ` — ${reduction}% reduction applied` : ' — no reduction applied';
+
+  const rows = ec1GenerateData(days, ec1Gran, groupBy, topN);
+  const daily = ec1DailyTotals(rows);
+
+  // KPIs
+  const mom = ec1MoM(daily);
+  const momEl = $('ec1-m-mom');
+  if (mom !== null) {
+    momEl.textContent = (mom >= 0 ? '+' : '') + mom.toFixed(1) + '%';
+    momEl.style.color = mom > 5 ? 'var(--red)' : mom < -5 ? 'var(--green)' : 'var(--text)';
+  } else { momEl.textContent = 'N/A'; momEl.style.color = ''; }
+
+  const conc = ec1TopConc(rows, 3);
+  $('ec1-m-conc').textContent = conc !== null ? conc.toFixed(1) + '%' : 'N/A';
+
+  const totalSpend = daily.reduce((a, d) => a + d.amount, 0);
+  const saved = totalSpend * (reduction / 100);
+  $('ec1-m-save').textContent = '$' + Math.round(saved).toLocaleString();
+  $('ec1-m-save-sub').textContent = `${reduction}% × $${Math.round(totalSpend).toLocaleString()}`;
+
+  // Anomalies
+  const anomalies = ec1Anomalies(daily);
+  const ab = $('ec1-anomaly-box');
+  if (anomalies.length === 0) {
+    ab.className = 'abox good';
+    ab.innerHTML = '<strong>✅ No Anomalies Detected</strong>No high spikes flagged — daily totals stayed within mean + 2× standard deviation.';
+  } else {
+    ab.className = 'abox warn';
+    ab.innerHTML = `<strong>⚠️ ${anomalies.length} Anomal${anomalies.length === 1 ? 'y' : 'ies'} Detected</strong>${anomalies.length} day${anomalies.length === 1 ? '' : 's'} exceeded mean + 2× std dev threshold. See table below for details.`;
+  }
+
+  const atbody = $('ec1-anomaly-tbl').querySelector('tbody');
+  if (anomalies.length === 0) {
+    atbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1rem">No anomalies detected</td></tr>';
+  } else {
+    atbody.innerHTML = anomalies.map(d =>
+      `<tr><td class="mono">${d.date}</td><td class="mono">$${d.amount.toFixed(2)}</td><td class="mono">${d.z.toFixed(2)}</td><td><span class="pill pill-red">Spike</span></td></tr>`
+    ).join('');
+  }
+
+  // Spend by group chart
+  const groups = [...new Set(rows.map(r => r.group))];
+  const dateKeys = [...new Set(rows.map(r => r.date.toISOString().slice(0, 10)))].sort();
+  const datasets = groups.map((g, gi) => {
+    const map = {};
+    rows.filter(r => r.group === g).forEach(r => { map[r.date.toISOString().slice(0, 10)] = r.amount; });
+    return {
+      label: g,
+      data: dateKeys.map(d => +(map[d] || 0).toFixed(2)),
+      borderColor: EC1_COLORS[gi % EC1_COLORS.length],
+      backgroundColor: 'transparent',
+      borderWidth: 2, tension: 0.3, pointRadius: 0, pointHoverRadius: 4,
+    };
+  });
+
+  const chartLabels = dateKeys.map(d => {
+    if (ec1Gran === 'MONTHLY') return d.slice(0, 7);
+    return dateKeys.length > 60 ? '' : d.slice(5);
+  });
+
+  if (ec1SpendChart) ec1SpendChart.destroy();
+  ec1SpendChart = new Chart($('ec1-spend-chart'), {
+    type: 'line',
+    data: {labels: chartLabels, datasets},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {position: 'top', labels: {color: '#7488a8', font: {size: 10}, boxWidth: 10}}},
+      scales: {
+        x: {ticks: {color: '#7488a8', maxRotation: 0, autoSkip: true, maxTicksLimit: 12}, grid: {color: 'rgba(31,45,74,.5)'}},
+        y: {ticks: {color: '#7488a8', callback: v => '$' + v.toFixed(0)}, grid: {color: 'rgba(31,45,74,.5)'}, title: {display: true, text: 'USD', color: '#7488a8', font: {size: 11}}},
+      },
+      interaction: {mode: 'index', intersect: false},
+    }
+  });
+
+  // Total spend vs projected chart
+  const actualData = daily.map(d => +d.amount.toFixed(2));
+  const projData = daily.map(d => +(d.amount * (1 - reduction / 100)).toFixed(2));
+  const totalLabels = daily.map(d => {
+    if (ec1Gran === 'MONTHLY') return d.date.slice(0, 7);
+    return daily.length > 60 ? '' : d.date.slice(5);
+  });
+
+  if (ec1TotalChart) ec1TotalChart.destroy();
+  ec1TotalChart = new Chart($('ec1-total-chart'), {
+    type: 'line',
+    data: {
+      labels: totalLabels,
+      datasets: [
+        {label: 'Actual Total (USD)', data: actualData, borderColor: 'rgba(79,123,255,1)', backgroundColor: 'rgba(79,123,255,.08)', borderWidth: 2.5, tension: 0.3, pointRadius: 0, fill: true},
+        {label: 'Projected After Policy (USD)', data: projData, borderColor: 'rgba(39,167,106,1)', backgroundColor: 'rgba(39,167,106,.08)', borderWidth: 2, borderDash: [6, 4], tension: 0.3, pointRadius: 0, fill: true},
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {position: 'top', labels: {color: '#7488a8', font: {size: 11}, boxWidth: 12}}},
+      scales: {
+        x: {ticks: {color: '#7488a8', maxRotation: 0, autoSkip: true, maxTicksLimit: 12}, grid: {color: 'rgba(31,45,74,.5)'}},
+        y: {ticks: {color: '#7488a8', callback: v => '$' + v.toFixed(0)}, grid: {color: 'rgba(31,45,74,.5)'}, title: {display: true, text: 'USD', color: '#7488a8', font: {size: 11}}},
+      },
+      interaction: {mode: 'index', intersect: false},
+    }
+  });
+}
+
+// ── Init on load ───────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  renderP1();
+  renderP4();
+  renderP5();
+  renderP7();
+  renderP8();
+});
+</script>
+
+<!-- AWS Amplify (Cognito) — ES module via CDN. Replace placeholders only after pool + app client exist. -->
+<script type="module">
+/**
+ * Cognito public identifiers — safe in Git; never add client secrets or IAM keys here.
+ * USER_POOL_ID:   Cognito console → User pool → Pool details → User pool ID (e.g. us-east-1_xxxx)
+ * CLIENT_ID:      App integration → App clients → Client ID (no secret for SPA)
+ * REGION:         AWS region hosting the pool (must match pool ID prefix)
+ */
+/* ═══════════════════════════════════════════════════════
+   COGNITO CONFIGURATION — EXTRA CREDIT 2
+   Replace the placeholders below with your live values
+   from AWS Cognito → User pools → Pool details / App clients.
+   These are public identifiers; do NOT add secrets or IAM keys.
+   ═══════════════════════════════════════════════════════ */
+const COGNITO_USER_POOL_ID        = 'us-east-1_XXXXXXXXX'; // ← YOUR POOL ID
+const COGNITO_USER_POOL_CLIENT_ID = 'YOUR_CLIENT_ID_HERE'; // ← YOUR CLIENT ID
+const COGNITO_REGION              = 'us-east-1';           // ← YOUR REGION
+
+import { Amplify } from 'https://esm.sh/aws-amplify@6.14.0';
+import {
+  signIn,
+  signUp,
+  signOut,
+  getCurrentUser,
+  confirmSignUp,
+  resetPassword,
+  confirmResetPassword,
+} from 'https://esm.sh/aws-amplify@6.14.0/auth';
+
+const el = id => document.getElementById(id);
+
+function cognitoConfigured() {
+  return !!(String(COGNITO_USER_POOL_ID || '').trim()
+    && String(COGNITO_USER_POOL_CLIENT_ID || '').trim()
+    && String(COGNITO_REGION || '').trim());
+}
+
+function flash(msg, kind) {
+  const box = el('auth-flash');
+  box.textContent = msg;
+  box.className = 'auth-msg ' + (kind || 'err');
+  box.style.display = msg ? 'block' : 'none';
+}
+
+function setAuthBusy(busy) {
+  ['auth-btn-signin','auth-btn-signup','auth-btn-confirm','auth-btn-fp-request','auth-btn-fp-submit'].forEach(id => {
+    const b = el(id);
+    if (b) b.disabled = busy;
+  });
+}
+
+function revealApp() {
+  el('app').classList.add('authed');
+  el('auth-overlay').classList.add('hidden');
+  el('auth-logout-btn').style.display = 'block';
+  flash('', '');
+  requestAnimationFrame(() => {
+    ['renderP1','renderP2','renderP4','renderP5','renderP6','renderP7','renderP8','renderP9','renderEC1'].forEach(fn => {
+      try {
+        if (typeof window[fn] === 'function') window[fn]();
+      } catch (_) { /* ignore */ }
+    });
+  });
+}
+
+async function tryResumeSession() {
+  if (!cognitoConfigured()) return;
+  try {
+    await getCurrentUser();
+    revealApp();
+  } catch (_) {
+    /* stay on sign-in */
+  }
+}
+
+let signupPendingUser = null;
+let forgotPendingEmail = null;
+
+function resetSignupFlow() {
+  signupPendingUser = null;
+  el('auth-pane-signup').style.display = '';
+  el('auth-pane-signup-confirm').style.display = 'none';
+  el('auth-up-code').value = '';
+}
+
+function showConfigGate() {
+  const m = el('auth-config-msg');
+  m.style.display = 'block';
+  m.textContent =
+    'Cognito is not configured for this deployment. Add your USER_POOL_ID and CLIENT_ID (and correct REGION) in the script block labeled “Cognito public identifiers” at the bottom of index.html, then redeploy. See README.md for step-by-step AWS Console setup.';
+  el('auth-overlay').querySelectorAll('input, button').forEach(node => { node.disabled = true; });
+}
+
+function bindTabs() {
+  el('auth-overlay').querySelectorAll('[data-auth-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!cognitoConfigured()) return;
+      const tab = btn.getAttribute('data-auth-tab');
+      el('auth-overlay').querySelectorAll('[data-auth-tab]').forEach(b => {
+        const on = b === btn;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      el('auth-pane-signin').classList.toggle('active', tab === 'signin');
+      el('auth-pane-signup').classList.toggle('active', tab === 'signup');
+      el('auth-pane-forgot').classList.toggle('active', tab === 'forgot');
+      el('auth-pane-signin').style.display = tab === 'signin' ? '' : 'none';
+      el('auth-pane-signup').style.display = tab === 'signup' ? '' : 'none';
+      el('auth-pane-forgot').style.display = tab === 'forgot' ? '' : 'none';
+      if (tab === 'signup') resetSignupFlow();
+      if (tab === 'forgot') {
+        el('auth-forgot-step1').style.display = '';
+        el('auth-forgot-step2').style.display = 'none';
+        forgotPendingEmail = null;
+      }
+      flash('', '');
+    });
+  });
+}
+
+async function main() {
+  if (!cognitoConfigured()) {
+    showConfigGate();
+    return;
+  }
+
+  Amplify.configure({
+    Auth: {
+      Cognito: {
+        userPoolId: COGNITO_USER_POOL_ID.trim(),
+        userPoolClientId: COGNITO_USER_POOL_CLIENT_ID.trim(),
+      },
+    },
+  });
+
+  bindTabs();
+
+  el('auth-btn-signin').addEventListener('click', async () => {
+    flash('', '');
+    const username = el('auth-in-email').value.trim();
+    const password = el('auth-in-pass').value;
+    if (!username || !password) {
+      flash('Enter email and password.', 'err');
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      const out = await signIn({ username, password });
+      const step = out?.nextStep?.signInStep;
+      if (step === 'CONFIRM_SIGN_UP') {
+        flash('Confirm your email before signing in. Use the Sign up tab to request a new code if needed.', 'err');
+        return;
+      }
+      if (step && step !== 'DONE') {
+        flash('Additional sign-in steps are required in Cognito for this user.', 'err');
+        return;
+      }
+      revealApp();
+    } catch (e) {
+      flash(e?.message || 'Sign in failed.', 'err');
+    } finally {
+      setAuthBusy(false);
+    }
+  });
+
+  el('auth-btn-signup').addEventListener('click', async () => {
+    flash('', '');
+    const username = el('auth-up-email').value.trim();
+    const p1 = el('auth-up-pass').value;
+    const p2 = el('auth-up-pass2').value;
+    if (!username || !p1) {
+      flash('Enter email and password.', 'err');
+      return;
+    }
+    if (p1 !== p2) {
+      flash('Passwords do not match.', 'err');
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      const { nextStep } = await signUp({
+        username,
+        password: p1,
+        options: { userAttributes: { email: username } },
+      });
+      if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
+        signupPendingUser = username;
+        el('auth-pane-signup').style.display = 'none';
+        el('auth-pane-signup-confirm').style.display = 'block';
+        flash('Check your email for the confirmation code.', 'ok');
+      } else if (nextStep.signUpStep === 'COMPLETE_AUTO_SIGN_IN') {
+        revealApp();
+      } else {
+        flash('Sign up requires an extra step in Cognito. Complete it in the console or adjust pool settings.', 'err');
+      }
+    } catch (e) {
+      flash(e?.message || 'Sign up failed.', 'err');
+    } finally {
+      setAuthBusy(false);
+    }
+  });
+
+  el('auth-btn-confirm').addEventListener('click', async () => {
+    if (!signupPendingUser) {
+      flash('Start sign up again to receive a code.', 'err');
+      return;
+    }
+    const code = el('auth-up-code').value.trim();
+    if (!code) {
+      flash('Enter the verification code.', 'err');
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      await confirmSignUp({ username: signupPendingUser, confirmationCode: code });
+      const signedUpAs = signupPendingUser;
+      flash('Email verified. You can sign in.', 'ok');
+      resetSignupFlow();
+      el('auth-overlay').querySelector('[data-auth-tab="signin"]').click();
+      el('auth-in-email').value = signedUpAs;
+    } catch (e) {
+      flash(e?.message || 'Verification failed.', 'err');
+    } finally {
+      setAuthBusy(false);
+    }
+  });
+
+  el('auth-btn-fp-request').addEventListener('click', async () => {
+    flash('', '');
+    const username = el('auth-fp-email').value.trim();
+    if (!username) {
+      flash('Enter your account email.', 'err');
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      await resetPassword({ username });
+      forgotPendingEmail = username;
+      el('auth-forgot-step1').style.display = 'none';
+      el('auth-forgot-step2').style.display = '';
+      flash('If an account exists, a confirmation code was sent to the registered email.', 'ok');
+    } catch (e) {
+      flash(e?.message || 'Could not start password reset.', 'err');
+    } finally {
+      setAuthBusy(false);
+    }
+  });
+
+  el('auth-btn-fp-submit').addEventListener('click', async () => {
+    const username = forgotPendingEmail || el('auth-fp-email').value.trim();
+    const confirmationCode = el('auth-fp-code').value.trim();
+    const newPassword = el('auth-fp-new1').value;
+    const again = el('auth-fp-new2').value;
+    if (!username || !confirmationCode || !newPassword) {
+      flash('Fill in code and new password.', 'err');
+      return;
+    }
+    if (newPassword !== again) {
+      flash('New passwords do not match.', 'err');
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      await confirmResetPassword({ username, confirmationCode, newPassword });
+      flash('Password updated. Sign in with the new password.', 'ok');
+      el('auth-forgot-step1').style.display = '';
+      el('auth-forgot-step2').style.display = 'none';
+      el('auth-overlay').querySelector('[data-auth-tab="signin"]').click();
+      el('auth-in-email').value = username;
+    } catch (e) {
+      flash(e?.message || 'Password reset failed.', 'err');
+    } finally {
+      setAuthBusy(false);
+    }
+  });
+
+  el('auth-logout-btn').addEventListener('click', async () => {
+    try {
+      await signOut({ global: true });
+    } catch (_) { /* ignore */ }
+    el('app').classList.remove('authed');
+    el('auth-overlay').classList.remove('hidden');
+    el('auth-logout-btn').style.display = 'none';
+    el('auth-in-pass').value = '';
+  });
+
+  el('auth-in-email').addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      el('auth-in-pass').focus();
+    }
+  });
+  el('auth-in-pass').addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      el('auth-btn-signin').click();
+    }
+  });
+
+  await tryResumeSession();
+}
+
+main();
+</script>
+</body>
+</html>
