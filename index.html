@@ -2574,34 +2574,12 @@ window.addEventListener('load', () => {
 });
 </script>
 
-<!-- AWS Amplify (Cognito) — ES module via CDN. Replace placeholders only after pool + app client exist. -->
-<script type="module">
-/**
- * Cognito public identifiers — safe in Git; never add client secrets or IAM keys here.
- * USER_POOL_ID:   Cognito console → User pool → Pool details → User pool ID (e.g. us-east-1_xxxx)
- * CLIENT_ID:      App integration → App clients → Client ID (no secret for SPA)
- * REGION:         AWS region hosting the pool (must match pool ID prefix)
- */
-/* ═══════════════════════════════════════════════════════
-   COGNITO CONFIGURATION — EXTRA CREDIT 2
-   Replace the placeholders below with your live values
-   from AWS Cognito → User pools → Pool details / App clients.
-   These are public identifiers; do NOT add secrets or IAM keys.
-   ═══════════════════════════════════════════════════════ */
+<!-- AWS Amplify (Cognito) — UMD build via CDN (v5, most reliable for static sites) -->
+<script src="https://cdn.jsdelivr.net/npm/aws-amplify@5.3.27/dist/aws-amplify.min.js"></script>
+<script>
 const COGNITO_USER_POOL_ID        = 'eu-north-1_NANX2Oii6';
 const COGNITO_USER_POOL_CLIENT_ID = '3pp0ljr7iv9bfjddt0jsjc1d4d';
 const COGNITO_REGION              = 'eu-north-1';
-
-import { Amplify } from 'https://esm.sh/aws-amplify@6.14.0';
-import {
-  signIn,
-  signUp,
-  signOut,
-  getCurrentUser,
-  confirmSignUp,
-  resetPassword,
-  confirmResetPassword,
-} from 'https://esm.sh/aws-amplify@6.14.0/auth';
 
 const el = id => document.getElementById(id);
 
@@ -2642,7 +2620,7 @@ function revealApp() {
 async function tryResumeSession() {
   if (!cognitoConfigured()) return;
   try {
-    await getCurrentUser();
+    await window.aws_amplify.Auth.currentAuthenticatedUser();
     revealApp();
   } catch (_) {
     /* stay on sign-in */
@@ -2663,7 +2641,7 @@ function showConfigGate() {
   const m = el('auth-config-msg');
   m.style.display = 'block';
   m.textContent =
-    'Cognito is not configured for this deployment. Add your USER_POOL_ID and CLIENT_ID (and correct REGION) in the script block labeled “Cognito public identifiers” at the bottom of index.html, then redeploy. See README.md for step-by-step AWS Console setup.';
+    'Cognito is not configured for this deployment. Add your USER_POOL_ID and CLIENT_ID (and correct REGION) in the script block at the bottom of index.html, then redeploy.';
   el('auth-overlay').querySelectorAll('input, button').forEach(node => { node.disabled = true; });
 }
 
@@ -2700,12 +2678,11 @@ async function main() {
     return;
   }
 
-  Amplify.configure({
+  window.aws_amplify.Amplify.configure({
     Auth: {
-      Cognito: {
-        userPoolId: COGNITO_USER_POOL_ID.trim(),
-        userPoolClientId: COGNITO_USER_POOL_CLIENT_ID.trim(),
-      },
+      region: COGNITO_REGION.trim(),
+      userPoolId: COGNITO_USER_POOL_ID.trim(),
+      userPoolWebClientId: COGNITO_USER_POOL_CLIENT_ID.trim(),
     },
   });
 
@@ -2721,19 +2698,14 @@ async function main() {
     }
     setAuthBusy(true);
     try {
-      const out = await signIn({ username, password });
-      const step = out?.nextStep?.signInStep;
-      if (step === 'CONFIRM_SIGN_UP') {
-        flash('Confirm your email before signing in. Use the Sign up tab to request a new code if needed.', 'err');
-        return;
-      }
-      if (step && step !== 'DONE') {
-        flash('Additional sign-in steps are required in Cognito for this user.', 'err');
-        return;
-      }
+      await window.aws_amplify.Auth.signIn(username, password);
       revealApp();
     } catch (e) {
-      flash(e?.message || 'Sign in failed.', 'err');
+      if (e.code === 'UserNotConfirmedException') {
+        flash('Confirm your email before signing in. Use the Sign up tab to request a new code if needed.', 'err');
+      } else {
+        flash(e.message || 'Sign in failed.', 'err');
+      }
     } finally {
       setAuthBusy(false);
     }
@@ -2754,23 +2726,17 @@ async function main() {
     }
     setAuthBusy(true);
     try {
-      const { nextStep } = await signUp({
+      await window.aws_amplify.Auth.signUp({
         username,
         password: p1,
-        options: { userAttributes: { email: username } },
+        attributes: { email: username },
       });
-      if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
-        signupPendingUser = username;
-        el('auth-pane-signup').style.display = 'none';
-        el('auth-pane-signup-confirm').style.display = 'block';
-        flash('Check your email for the confirmation code.', 'ok');
-      } else if (nextStep.signUpStep === 'COMPLETE_AUTO_SIGN_IN') {
-        revealApp();
-      } else {
-        flash('Sign up requires an extra step in Cognito. Complete it in the console or adjust pool settings.', 'err');
-      }
+      signupPendingUser = username;
+      el('auth-pane-signup').style.display = 'none';
+      el('auth-pane-signup-confirm').style.display = 'block';
+      flash('Check your email for the confirmation code.', 'ok');
     } catch (e) {
-      flash(e?.message || 'Sign up failed.', 'err');
+      flash(e.message || 'Sign up failed.', 'err');
     } finally {
       setAuthBusy(false);
     }
@@ -2788,14 +2754,14 @@ async function main() {
     }
     setAuthBusy(true);
     try {
-      await confirmSignUp({ username: signupPendingUser, confirmationCode: code });
+      await window.aws_amplify.Auth.confirmSignUp(signupPendingUser, code);
       const signedUpAs = signupPendingUser;
       flash('Email verified. You can sign in.', 'ok');
       resetSignupFlow();
       el('auth-overlay').querySelector('[data-auth-tab="signin"]').click();
       el('auth-in-email').value = signedUpAs;
     } catch (e) {
-      flash(e?.message || 'Verification failed.', 'err');
+      flash(e.message || 'Verification failed.', 'err');
     } finally {
       setAuthBusy(false);
     }
@@ -2810,13 +2776,13 @@ async function main() {
     }
     setAuthBusy(true);
     try {
-      await resetPassword({ username });
+      await window.aws_amplify.Auth.forgotPassword(username);
       forgotPendingEmail = username;
       el('auth-forgot-step1').style.display = 'none';
       el('auth-forgot-step2').style.display = '';
       flash('If an account exists, a confirmation code was sent to the registered email.', 'ok');
     } catch (e) {
-      flash(e?.message || 'Could not start password reset.', 'err');
+      flash(e.message || 'Could not start password reset.', 'err');
     } finally {
       setAuthBusy(false);
     }
@@ -2837,14 +2803,14 @@ async function main() {
     }
     setAuthBusy(true);
     try {
-      await confirmResetPassword({ username, confirmationCode, newPassword });
+      await window.aws_amplify.Auth.forgotPasswordSubmit(username, confirmationCode, newPassword);
       flash('Password updated. Sign in with the new password.', 'ok');
       el('auth-forgot-step1').style.display = '';
       el('auth-forgot-step2').style.display = 'none';
       el('auth-overlay').querySelector('[data-auth-tab="signin"]').click();
       el('auth-in-email').value = username;
     } catch (e) {
-      flash(e?.message || 'Password reset failed.', 'err');
+      flash(e.message || 'Password reset failed.', 'err');
     } finally {
       setAuthBusy(false);
     }
@@ -2852,7 +2818,7 @@ async function main() {
 
   el('auth-logout-btn').addEventListener('click', async () => {
     try {
-      await signOut({ global: true });
+      await window.aws_amplify.Auth.signOut();
     } catch (_) { /* ignore */ }
     el('app').classList.remove('authed');
     el('auth-overlay').classList.remove('hidden');
